@@ -64,8 +64,10 @@ pub struct FriExtras {
 }
 
 // For dictionaries in Python, we use HashMaps in Rust.
+// todo refactor it to be a struct that is not based on serde_json, which should only be utilized at the stage of saving output file
 pub type MerkleFactRegistryInput = HashMap<String, serde_json::Value>;
 pub type MerkleExtrasDict = HashMap<String, Vec<MerkleLine>>;
+// todo refactor it to be a struct that is not based on serde_json, which should only be utilized at the stage of saving output file
 pub type FRIMerkleFactRegistryInput = HashMap<String, serde_json::Value>; // Adjust according to the structure
 
 // Parses hex strings and pads with zeros to make it 64 characters long
@@ -315,7 +317,6 @@ fn montgomery_encode(element: &str) -> U256 {
 
     let r = BigUint::one() << 256; // Use 2^256 as R
     let encoded: BigUint = (num * r) % prime; // this seems to lost the purpose of montgomery encoding which aims to avoid division
-    // println!("encoded: {}, element: {}", encoded, element);
     U256::from_str_radix(&encoded.to_str_radix(10), 10).unwrap()
 }
 
@@ -361,12 +362,10 @@ pub fn gen_fri_merkle_statement_call(
     for fline in fri_extras.values.iter().chain(fri_original.iter()) {
         rows_to_cols.entry(fline.row).or_default().push(fline.col);
     }
-    println!("rows_to_cols: {:?}", rows_to_cols);
     let row_lens: Vec<usize> = rows_to_cols
         .values()
         .map(|v| v.iter().cloned().collect::<HashSet<_>>().len())
         .collect();
-    println!("row_lens: {:?}", row_lens);
     assert_eq!(row_lens.iter().cloned().collect::<HashSet<_>>().len(), 1);
 
     let step_size = (row_lens[0] as f64).log2() as usize;
@@ -427,7 +426,7 @@ pub fn gen_fri_merkle_statement_call(
         serde_json::Value::Array(
             output_layer_values
                 .iter()
-                .map(|&val| serde_json::Value::Number(serde_json::Number::from(val.low_u64())))
+                .map(|&val| serde_json::Value::Number(serde_json::Number::from_str(&val.to_string()).unwrap()))
                 .collect(),
         ),
     );
@@ -442,7 +441,7 @@ pub fn gen_fri_merkle_statement_call(
         serde_json::Value::Array(
             input_layer_inverses
                 .iter()
-                .map(|&inv| serde_json::Value::Number(serde_json::Number::from(inv.low_u64())))
+                .map(|&inv| serde_json::Value::Number(serde_json::Number::from_str(&inv.to_string()).unwrap()))
                 .collect(),
         ),
     );
@@ -457,7 +456,7 @@ pub fn gen_fri_merkle_statement_call(
         serde_json::Value::Array(
             output_layer_inverses
                 .iter()
-                .map(|&inv| serde_json::Value::Number(serde_json::Number::from(inv.low_u64())))
+                .map(|&inv| serde_json::Value::Number(serde_json::Number::from_str(&inv.to_string()).unwrap()))
                 .collect(),
         ),
     );
@@ -480,6 +479,7 @@ pub fn gen_fri_merkle_statement_call(
         )),
     );
 
+
     statement_json.insert(
         "output_interleaved".to_string(),
         serde_json::Value::Array(interleave(
@@ -491,12 +491,15 @@ pub fn gen_fri_merkle_statement_call(
                 .as_array()
                 .unwrap()
                 .clone(),
+            // todo how are these inverses working with the other values?
             statement_json["output_layer_inverses"]
                 .as_array()
                 .unwrap()
                 .clone(),
         )),
     );
+
+
 
     statement_json.insert(
         "proof".to_string(),
@@ -559,7 +562,6 @@ fn parse_merkles_original(
                     trace_commitment_counter = new_trace_commitment_counter;
                 }
                 Err(e) => {
-                    eprintln!("Error parsing commitment line: {}", e);
                     return Err(e);
                 }
             }
@@ -859,7 +861,9 @@ pub fn split_fri_merkle_statements(
             .as_array()
             .unwrap()
             .iter()
-            .map(|val| Token::Uint(val.as_u64().unwrap().into()))
+            .map(|val| {
+                Token::Uint(U256::from_dec_str(&val.to_string()).unwrap())
+            })
             .collect();
 
         let encoded = ethers::abi::encode_packed(&[Token::Array(fri_output_interleaved)])?;
