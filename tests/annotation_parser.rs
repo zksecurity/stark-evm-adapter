@@ -11,7 +11,7 @@ mod tests {
 
     #[test]
     fn test_split_fri_merkle_statements() {
-        let mut file = File::open("tests/proof.json").expect("unable to open input file");
+        let mut file = File::open("tests/fixtures/annotated_proof.json").expect("unable to open input file");
         let mut contents = String::new();
         file.read_to_string(&mut contents)
             .expect("unable to read file");
@@ -23,7 +23,7 @@ mod tests {
             split_fri_merkle_statements(input_json).unwrap();
 
         let mut file =
-            File::open("tests/expected_split_fri_proofs.json").expect("unable to open output file");
+            File::open("tests/fixtures/expected_split_proofs.json").expect("unable to open output file");
         let mut contents = String::new();
         file.read_to_string(&mut contents)
             .expect("unable to read file");
@@ -48,7 +48,7 @@ mod tests {
 
         for (index, obj) in fri_merkle_statements.iter().enumerate() {
             for key in &keys {
-                assert_eq!(&obj[*key], &expected_split_fri_proofs_value[index][key]);
+                assert_eq!(&obj[*key], &expected_split_fri_proofs_value["fri_merkle_statements"][index][key]);
             }
         }
     }
