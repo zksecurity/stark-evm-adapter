@@ -2793,6 +2793,7 @@ version = "0.1.0"
 dependencies = [
  "ethers",
  "num-bigint",
+ "num-traits",
  "regex",
  "serde",
  "serde_json",

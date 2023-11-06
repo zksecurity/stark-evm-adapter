@@ -2,6 +2,8 @@ use ethers::abi::Token;
 use ethers::utils::hex::FromHexError;
 use ethers::utils::keccak256;
 use ethers::{types::U256, utils::hex};
+use num_bigint::BigUint;
+use num_traits::{Num, One};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -88,14 +90,16 @@ fn parse_merkle_line(line: &str) -> Result<MerkleLine, regex::Error> {
         .next()
         .unwrap()
         .to_string();
-    let node: U256 = U256::from_dec_str(line
-        .split("node ")
-        .nth(1)
-        .unwrap()
-        .split(':')
-        .next()
-        .unwrap()).unwrap();
-    
+    let node: U256 = U256::from_dec_str(
+        line.split("node ")
+            .nth(1)
+            .unwrap()
+            .split(':')
+            .next()
+            .unwrap(),
+    )
+    .unwrap();
+
     let digest = extract_hex(line)?;
 
     Ok(MerkleLine {
@@ -302,16 +306,17 @@ pub fn gen_merkle_statement_call(
 }
 
 fn montgomery_encode(element: &str) -> U256 {
-    let prime = U256::from_str_radix(
+    let prime = BigUint::from_str_radix(
         "800000000000011000000000000000000000000000000000000000000000001",
         16,
     )
-    .expect("Invalid number");
+    .expect("Invalid prime number");
+    let num = BigUint::from_str_radix(element, 16).expect("Invalid hex number for element");
 
-    let num = U256::from_str_radix(element, 16).expect("Invalid hex number");
-
-    // Perform the Montgomery encoding
-    ((&num << 256) % &prime)
+    let r = BigUint::one() << 256; // Use 2^256 as R
+    let encoded: BigUint = (num * r) % prime; // this seems to lost the purpose of montgomery encoding which aims to avoid division
+    // println!("encoded: {}, element: {}", encoded, element);
+    U256::from_str_radix(&encoded.to_str_radix(10), 10).unwrap()
 }
 
 fn interleave<T: Clone>(a: Vec<T>, b: Vec<T>, c: Vec<T>) -> Vec<T> {
@@ -354,10 +359,7 @@ pub fn gen_fri_merkle_statement_call(
 
     let mut rows_to_cols: HashMap<usize, Vec<usize>> = HashMap::new();
     for fline in fri_extras.values.iter().chain(fri_original.iter()) {
-        rows_to_cols
-            .entry(fline.row)
-            .or_default()
-            .push(fline.col);
+        rows_to_cols.entry(fline.row).or_default().push(fline.col);
     }
     println!("rows_to_cols: {:?}", rows_to_cols);
     let row_lens: Vec<usize> = rows_to_cols
@@ -366,7 +368,6 @@ pub fn gen_fri_merkle_statement_call(
         .collect();
     println!("row_lens: {:?}", row_lens);
     assert_eq!(row_lens.iter().cloned().collect::<HashSet<_>>().len(), 1);
-
 
     let step_size = (row_lens[0] as f64).log2() as usize;
     statement_json.insert(
@@ -401,6 +402,7 @@ pub fn gen_fri_merkle_statement_call(
     let input_layer_values = fri_extras
         .values
         .iter()
+        // todo check how this encoding work with other parts
         .map(|fline| montgomery_encode(&fline.element))
         .collect::<Vec<_>>();
 
@@ -409,7 +411,7 @@ pub fn gen_fri_merkle_statement_call(
         serde_json::Value::Array(
             input_layer_values
                 .iter()
-                .map(|&val| serde_json::Value::Number(serde_json::Number::from(val.low_u64())))
+                .map(|&val| serde_json::Value::Number(serde_json::Number::from_str(&val.to_string()).unwrap()))
                 .collect(),
         ),
     );
@@ -502,11 +504,12 @@ pub fn gen_fri_merkle_statement_call(
             .iter()
             .map(|fline| montgomery_encode(&fline.element))
             .chain(merkle_original.iter().map(|mline| {
-                U256::from_str_radix(&mline.digest, 16)
-                    .expect("Invalid hex number")
-                    // .as_u64()
+                U256::from_str_radix(&mline.digest, 16).expect("Invalid hex number")
+                // .as_u64()
             }))
-            .map(|num| serde_json::Value::Number(serde_json::Number::from_str(&num.to_string()).unwrap()))
+            .map(|num| {
+                serde_json::Value::Number(serde_json::Number::from_str(&num.to_string()).unwrap())
+            })
             .collect(),
     );
 
