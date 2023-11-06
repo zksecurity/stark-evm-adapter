@@ -261,16 +261,16 @@ fn parse_eval_point_line(line: &str) -> Result<EvalPointLine, Box<dyn std::error
 
 // Parses a proof annotation line to indices
 fn line_to_indices(line: &str) -> (usize, usize) {
-    if !line.starts_with("P->V[") {
-        return (0, 0);
-    }
-    let indices_str = &line[5..line.find(']').unwrap()];
-    let indices: Vec<usize> = indices_str
-        .split(':')
-        .map(|x| x.parse::<usize>().unwrap_or(0)) // Assuming we want to return 0 on parse failure
-        .collect();
+    let re = Regex::new(r"P->V\[(\d+):(\d+)\]").unwrap(); // Note: In production, don't unwrap here.
 
-    (indices[0], indices.get(1).cloned().unwrap_or(0)) // If there's no second element, return 0
+    match re.captures(line) {
+        Some(caps) => {
+            let start = caps.get(1).map_or(0, |m| m.as_str().parse::<usize>().unwrap_or(0));
+            let end = caps.get(2).map_or(0, |m| m.as_str().parse::<usize>().unwrap_or(0));
+            (start, end)
+        },
+        None => (0, 0),
+    }
 }
 
 // Function to generate a Merkle statement call
@@ -870,6 +870,9 @@ pub fn split_fri_merkle_statements(
         let hash = keccak256(encoded);
         main_proof.extend_from_slice(&hash);
     }
+
+    // println!("main_proof: {}", hex::encode(&main_proof));
+
 
     Ok((main_proof, merkle_statements, fri_merkle_statements))
 }
