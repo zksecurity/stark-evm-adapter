@@ -31,22 +31,28 @@ mod tests {
         let expected_split_fri_proofs_value: Value =
             serde_json::from_str(&contents).expect("unable to parse output JSON");
 
-        let keys: Vec<_> = vec![
-            "expected_root",
-            "evaluation_point",
-            "fri_step_size",
-            "input_layer_queries",
-            "output_layer_queries",
-            "input_layer_values",
-            "output_layer_values",
-            "input_layer_inverses",
-            "output_layer_inverses",
-            "input_interleaved",
-            "output_interleaved",
-            "proof",
-        ];
+        for (_, obj) in merkle_statements.iter().enumerate() {
+            let obj_json = obj.1.to_json();
+            for (key, value) in obj_json.as_object().unwrap() {
+                assert_eq!(value, &expected_split_fri_proofs_value["merkle_statements"][obj.0][key]);
+            }
+        }
 
         for (index, obj) in fri_merkle_statements.iter().enumerate() {
+            let keys: Vec<_> = vec![
+                "expected_root",
+                "evaluation_point",
+                "fri_step_size",
+                "input_layer_queries",
+                "output_layer_queries",
+                "input_layer_values",
+                "output_layer_values",
+                "input_layer_inverses",
+                "output_layer_inverses",
+                "input_interleaved",
+                "output_interleaved",
+                "proof",
+            ];
             for key in &keys {
                 assert_eq!(&obj[*key], &expected_split_fri_proofs_value["fri_merkle_statements"][index][key]);
             }

@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use ethers::types::U256;
 use serde::{Deserialize, Serialize};
 
@@ -37,6 +39,20 @@ impl MerkleStatement {
             .zip(self.merkle_queue_values.iter())
             .flat_map(|(&index, &value)| vec![index, value])
             .collect()
+    }
+
+    // Convert struct to serde json
+    pub fn to_json(&self) -> serde_json::Value {
+        let mut json = serde_json::to_value(self).unwrap();
+        // map merkle_queue_indices to serde_json value
+        self.merkle_queue_indices
+            .iter()
+            .enumerate()
+            .for_each(|(i, v)| {
+                json["merkle_queue_indices"][i] = serde_json::Value::Number(serde_json::Number::from_str(&v.to_string()).unwrap());
+            });
+
+        json
     }
 }
 
