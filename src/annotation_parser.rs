@@ -1,5 +1,4 @@
 use ethers::abi::Token;
-use ethers::utils::hex::FromHexError;
 use ethers::utils::keccak256;
 use ethers::{types::U256, utils::hex};
 use num_bigint::BigUint;
@@ -7,19 +6,17 @@ use num_traits::{Num, One};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::str::FromStr;
 use std::{
     collections::{HashMap, HashSet},
     error::Error,
-    num::ParseIntError,
 };
 
-use crate::fri_merkle_statement::FriMerkleStatement;
+use crate::fri_merkle_statement::FRIMerkleStatement;
 use crate::merkle_statement::MerkleStatement;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AnnotatedProof {
-    // todo how can we rename this property while mapping to the proof_hex key in json?
+    // todo: update serialize to rename this as main_proof while mapping to proof_hex from source proof file
     proof_hex: String,
     annotations: Vec<String>,
     extra_annotations: Vec<String>,
@@ -28,8 +25,7 @@ pub struct AnnotatedProof {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MerkleLine {
     pub name: String,
-    // todo: check if better to change to usize
-    pub node: U256, // Assuming the Python `int` is equivalent to a U256
+    pub node: U256,
     pub digest: String,
     pub annotation: String,
 }
@@ -61,7 +57,7 @@ pub struct CommitmentLine {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct EvalPointLine {
     pub name: String,
-    pub point: String, 
+    pub point: String,
     pub annotation: String,
 }
 
@@ -72,8 +68,6 @@ pub struct FriExtras {
 }
 
 pub type MerkleExtrasDict = HashMap<String, Vec<MerkleLine>>;
-// todo refactor it to be a struct that is not based on serde_json, which should only be utilized at the stage of saving output file
-pub type FRIMerkleFactRegistryInput = HashMap<String, serde_json::Value>; // Adjust according to the structure
 
 // Parses hex strings and pads with zeros to make it 64 characters long
 fn extract_hex(line: &str) -> Result<String, regex::Error> {
@@ -345,20 +339,9 @@ pub fn gen_fri_merkle_statement_call(
     merkle_extras: Vec<MerkleLine>,
     merkle_commitment: CommitmentLine,
     evaluation_point: EvalPointLine,
-) -> FRIMerkleFactRegistryInput {
-    let mut statement_json = FRIMerkleFactRegistryInput::new();
-
+) -> FRIMerkleStatement {
     let root = U256::from_str_radix(&merkle_commitment.digest, 16).expect("Invalid hex number");
-    statement_json.insert(
-        "expected_root".to_string(),
-        serde_json::Value::Number(serde_json::Number::from_str(&root.to_string()).unwrap()),
-    );
-
     let eval_point = U256::from_str_radix(&evaluation_point.point, 16).expect("Invalid hex number");
-    statement_json.insert(
-        "evaluation_point".to_string(),
-        serde_json::Value::Number(serde_json::Number::from_str(&eval_point.to_string()).unwrap()),
-    );
 
     let heights: Vec<usize> = merkle_extras
         .iter()
@@ -378,34 +361,18 @@ pub fn gen_fri_merkle_statement_call(
     assert_eq!(row_lens.iter().cloned().collect::<HashSet<_>>().len(), 1);
 
     let step_size = (row_lens[0] as f64).log2() as usize;
-    statement_json.insert(
-        "fri_step_size".to_string(),
-        serde_json::Value::Number(serde_json::Number::from(step_size)),
-    );
     let input_height = output_height + step_size;
 
-    statement_json.insert(
-        "input_layer_queries".to_string(),
-        fri_extras
-            .inverses
-            .iter()
-            .map(|fline| fline.index + (1 << input_height))
-            .collect(),
-    );
+    let input_layer_queries: Vec<U256> = fri_extras
+        .inverses
+        .iter()
+        .map(|fline| U256::from(fline.index + (1 << input_height)))
+        .collect();
 
     let output_layer_queries = merkle_extras
         .iter()
         .map(|mline| mline.node)
         .collect::<Vec<_>>();
-    statement_json.insert(
-        "output_layer_queries".to_string(),
-        serde_json::Value::Array(
-            output_layer_queries
-                .iter()
-                .map(|&node| serde_json::Value::Number(serde_json::Number::from(node.low_u64())))
-                .collect(),
-        ),
-    );
 
     let input_layer_values = fri_extras
         .values
@@ -414,131 +381,60 @@ pub fn gen_fri_merkle_statement_call(
         .map(|fline| montgomery_encode(&fline.element))
         .collect::<Vec<_>>();
 
-    statement_json.insert(
-        "input_layer_values".to_string(),
-        serde_json::Value::Array(
-            input_layer_values
-                .iter()
-                .map(|&val| {
-                    serde_json::Value::Number(
-                        serde_json::Number::from_str(&val.to_string()).unwrap(),
-                    )
-                })
-                .collect(),
-        ),
-    );
-
     let output_layer_values = fri_extras_next
         .values
         .iter()
         .map(|fline| montgomery_encode(&fline.element))
         .collect::<Vec<_>>();
 
-    statement_json.insert(
-        "output_layer_values".to_string(),
-        serde_json::Value::Array(
-            output_layer_values
-                .iter()
-                .map(|&val| {
-                    serde_json::Value::Number(
-                        serde_json::Number::from_str(&val.to_string()).unwrap(),
-                    )
-                })
-                .collect(),
-        ),
-    );
-
     let input_layer_inverses = fri_extras
         .inverses
         .iter()
         .map(|fline| U256::from_str_radix(&fline.inv, 16).expect("Invalid hex number"))
         .collect::<Vec<_>>();
-    statement_json.insert(
-        "input_layer_inverses".to_string(),
-        serde_json::Value::Array(
-            input_layer_inverses
-                .iter()
-                .map(|&inv| {
-                    serde_json::Value::Number(
-                        serde_json::Number::from_str(&inv.to_string()).unwrap(),
-                    )
-                })
-                .collect(),
-        ),
-    );
 
     let output_layer_inverses = fri_extras_next
         .inverses
         .iter()
         .map(|fline| U256::from_str_radix(&fline.inv, 16).expect("Invalid hex number"))
         .collect::<Vec<_>>();
-    statement_json.insert(
-        "output_layer_inverses".to_string(),
-        serde_json::Value::Array(
-            output_layer_inverses
+
+    let proof = fri_original
+        .iter()
+        .map(|fline| montgomery_encode(&fline.element))
+        .chain(
+            merkle_original
                 .iter()
-                .map(|&inv| {
-                    serde_json::Value::Number(
-                        serde_json::Number::from_str(&inv.to_string()).unwrap(),
-                    )
-                })
-                .collect(),
-        ),
+                .map(|mline| U256::from_str_radix(&mline.digest, 16).expect("Invalid hex number")),
+        )
+        .collect();
+
+    let input_interleaved = interleave(
+        input_layer_queries.clone(),
+        input_layer_values.clone(),
+        input_layer_inverses.clone(),
+    );
+    let output_interleaved = interleave(
+        output_layer_queries.clone(),
+        output_layer_values.clone(),
+        output_layer_inverses.clone(),
     );
 
-    statement_json.insert(
-        "input_interleaved".to_string(),
-        serde_json::Value::Array(interleave(
-            statement_json["input_layer_queries"]
-                .as_array()
-                .unwrap()
-                .clone(),
-            statement_json["input_layer_values"]
-                .as_array()
-                .unwrap()
-                .clone(),
-            statement_json["input_layer_inverses"]
-                .as_array()
-                .unwrap()
-                .clone(),
-        )),
-    );
-
-    statement_json.insert(
-        "output_interleaved".to_string(),
-        serde_json::Value::Array(interleave(
-            statement_json["output_layer_queries"]
-                .as_array()
-                .unwrap()
-                .clone(),
-            statement_json["output_layer_values"]
-                .as_array()
-                .unwrap()
-                .clone(),
-            // todo how are these inverses working with the other values?
-            statement_json["output_layer_inverses"]
-                .as_array()
-                .unwrap()
-                .clone(),
-        )),
-    );
-
-    statement_json.insert(
-        "proof".to_string(),
-        fri_original
-            .iter()
-            .map(|fline| montgomery_encode(&fline.element))
-            .chain(merkle_original.iter().map(|mline| {
-                U256::from_str_radix(&mline.digest, 16).expect("Invalid hex number")
-                // .as_u64()
-            }))
-            .map(|num| {
-                serde_json::Value::Number(serde_json::Number::from_str(&num.to_string()).unwrap())
-            })
-            .collect(),
-    );
-
-    statement_json
+    FRIMerkleStatement {
+        expected_root: root,
+        evaluation_point: eval_point,
+        fri_step_size: step_size,
+        input_layer_queries,
+        output_layer_queries,
+        input_layer_values,
+        output_layer_values,
+        input_layer_inverses,
+        output_layer_inverses,
+        // refactor these interleaved into this struct
+        input_interleaved,
+        output_interleaved,
+        proof,
+    }
 }
 
 fn parse_merkles_extra(extra_annot_lines: Vec<&str>) -> Result<MerkleExtrasDict, regex::Error> {
@@ -610,7 +506,6 @@ fn parse_merkles_original(
 }
 
 fn parse_fri_merkles_extra(
-    // todo does it have to be &str instead of String?
     extra_annot_lines: Vec<&str>,
 ) -> Result<(MerkleExtrasDict, Vec<FriExtras>), Box<dyn Error>> {
     let mut merkle_extras_dict = MerkleExtrasDict::new();
@@ -790,7 +685,7 @@ fn single_column_merkle_patch(
 fn extract_proof_and_annotations(
     proof_json: Value,
 ) -> Result<(Vec<u8>, Vec<String>, Vec<String>), Box<dyn Error>> {
-    // todo can AnnotatedProof deserializer validate these?
+    // todo: use AnnotatedProof deserializer to validate these
     let orig_proof_hex = proof_json["proof_hex"]
         .as_str()
         .ok_or("proof_hex field is missing or not a string")?;
@@ -821,16 +716,10 @@ pub fn split_fri_merkle_statements(
     (
         Vec<u8>,
         HashMap<String, MerkleStatement>,
-        Vec<FRIMerkleFactRegistryInput>,
+        Vec<FRIMerkleStatement>,
     ),
     Box<dyn std::error::Error>,
 > {
-    // let (orig_proof, annot_lines, extra_annot_lines) = extract_proof_and_annotations(proof_json)?;
-    // let orig_proof = hex::decode(proof_json.proof_hex.join("")[2..])?;
-    // let orig_proof = hex::decode(&orig_proof_hex[2..])?;
-    // Concatenate the strings from the vector
-    // let concatenated_proof_hex = proof_json.proof_hex.join("");
-
     // Slice starting from the third character
     let sliced_proof_hex = &proof_json.proof_hex[2..];
 
@@ -875,7 +764,7 @@ pub fn split_fri_merkle_statements(
         })
         .collect::<HashMap<_, _>>();
 
-    let fri_merkle_statements: Vec<FRIMerkleFactRegistryInput> = fri_names
+    let fri_merkle_statements: Vec<FRIMerkleStatement> = fri_names
         .into_iter()
         .enumerate()
         .map(|(i, name)| {
@@ -893,12 +782,9 @@ pub fn split_fri_merkle_statements(
 
     for fri in &fri_merkle_statements[..fri_merkle_statements.len() - 1] {
         let fri_output_interleaved = fri
-            .get("output_interleaved")
-            .unwrap()
-            .as_array()
-            .unwrap()
+            .output_interleaved
             .iter()
-            .map(|val| Token::Uint(U256::from_dec_str(&val.to_string()).unwrap()))
+            .map(|val| Token::Uint(*val))
             .collect();
 
         let encoded = ethers::abi::encode_packed(&[Token::Array(fri_output_interleaved)])?;

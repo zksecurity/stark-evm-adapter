@@ -5,6 +5,7 @@ use stark_evm_adapter::annotation_parser::split_fri_merkle_statements;
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ethers::types::U256;
     use ethers::utils::hex;
     use serde_json::{self, Value};
     use stark_evm_adapter::annotation_parser::AnnotatedProof;
@@ -54,13 +55,25 @@ mod tests {
                 "output_interleaved",
                 "proof",
             ];
+            let obj_val = serde_json::to_value(obj).unwrap();
             for key in &keys {
                 assert_eq!(
-                    &obj[*key],
+                    &obj_val[*key],
                     &expected_split_fri_proofs_value["fri_merkle_statements"][index][key]
                 );
             }
         }
+        // for (index, obj) in fri_merkle_statements.iter().enumerate() {
+
+        //     assert_eq!(
+        //         obj.expected_root,
+        //         U256::from_dec_str(
+        //             &expected_split_fri_proofs_value["fri_merkle_statements"][index]["expected_root"]
+        //                 .to_string()
+        //         ).unwrap()
+        //     );
+        // }
+        
 
         assert_eq!(
             hex::encode(main_proof),
