@@ -21,9 +21,11 @@ mod tests {
         let expected_split_fri_proofs = get_expected_split_proofs();
         let serialized_split_proofs = serde_json::to_value(&split_proofs).unwrap();
 
-        
-        // assert merkle_statements 
-        for (trace_name, trace_merkle) in expected_split_fri_proofs["merkle_statements"].as_object().unwrap() {
+        // assert merkle_statements
+        for (trace_name, trace_merkle) in expected_split_fri_proofs["merkle_statements"]
+            .as_object()
+            .unwrap()
+        {
             for (key, value) in trace_merkle.as_object().unwrap() {
                 assert_eq!(
                     *value,
@@ -32,7 +34,12 @@ mod tests {
             }
         }
         // assert fri_merkle_statements
-        for (index, fri_merkle_statement) in expected_split_fri_proofs["fri_merkle_statements"].as_array().unwrap().iter().enumerate() {
+        for (index, fri_merkle_statement) in expected_split_fri_proofs["fri_merkle_statements"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .enumerate()
+        {
             for (key, value) in fri_merkle_statement.as_object().unwrap() {
                 assert_eq!(
                     *value,

@@ -739,7 +739,7 @@ pub fn split_fri_merkle_statements(
     );
 
     if !merkle_patches.is_empty() {
-        single_column_merkle_patch(&merkle_patches, &mut merkle_extras_dict, &annot_lines);
+        single_column_merkle_patch(&merkle_patches, &mut merkle_extras_dict, &annot_lines)?;
     }
 
     let merkle_statements = merkle_names
