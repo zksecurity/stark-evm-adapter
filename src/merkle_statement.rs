@@ -3,11 +3,14 @@ use std::str::FromStr;
 use ethers::types::U256;
 use serde::{Deserialize, Serialize};
 
+use crate::{serialize_u256_as_number, serialize_vec_u256_as_number};
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MerkleStatement {
     expected_root: U256,
     n_unique_queries: usize,
     merkle_height: usize,
+    #[serde(serialize_with = "serialize_vec_u256_as_number")]
     merkle_queue_indices: Vec<U256>,
     merkle_queue_values: Vec<U256>,
     proof: Vec<U256>,

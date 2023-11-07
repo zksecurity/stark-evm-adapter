@@ -4,7 +4,7 @@ use ethers::{types::U256, utils::hex};
 use num_bigint::BigUint;
 use num_traits::{Num, One};
 use regex::Regex;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 use serde_json::Value;
 use std::{
     collections::{HashMap, HashSet},
@@ -16,7 +16,7 @@ use crate::merkle_statement::MerkleStatement;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AnnotatedProof {
-    // todo: update serialize to rename this as main_proof while mapping to proof_hex from source proof file
+    // todo: update deserializer to rename this as main_proof while mapping to proof_hex from source proof file
     proof_hex: String,
     annotations: Vec<String>,
     extra_annotations: Vec<String>,
@@ -69,13 +69,29 @@ pub struct FriExtras {
 
 pub type MerkleExtrasDict = HashMap<String, Vec<MerkleLine>>;
 
+#[derive(Serialize, Debug)]
+pub struct SplitProofs {
+    #[serde(serialize_with = "serialize_as_hex")]
+    pub main_proof: Vec<u8>,
+    pub merkle_statements: HashMap<String, MerkleStatement>,
+    pub fri_merkle_statements: Vec<FRIMerkleStatement>,
+}
+
+fn serialize_as_hex<S>(bytes: &Vec<u8>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let hex_string = hex::encode(bytes);
+    serializer.serialize_str(&hex_string)
+}
+
 // Parses hex strings and pads with zeros to make it 64 characters long
 fn extract_hex(line: &str) -> Result<String, regex::Error> {
     let re = Regex::new(r"\(0x([0-9a-f]+)\)")?;
     Ok(re
         .captures(line)
         .and_then(|cap| cap.get(1))
-        .map_or_else(|| String::new(), |m| format!("{:0>64}", m.as_str())))
+        .map_or_else(String::new, |m| format!("{:0>64}", m.as_str())))
 }
 
 fn is_merkle_line(line: &str) -> bool {
@@ -215,7 +231,7 @@ fn parse_commitment_line(
 ) -> Result<(CommitmentLine, usize), Box<dyn std::error::Error>> {
     let parts: Vec<&str> = line.split(':').collect();
     let path_parts: Vec<&str> = parts[2].trim().split('/').collect();
-    let mut name = None;
+    let name;
     let new_trace_commitment_counter;
 
     if path_parts.last() == Some(&"Commit on Trace") {
@@ -377,7 +393,6 @@ pub fn gen_fri_merkle_statement_call(
     let input_layer_values = fri_extras
         .values
         .iter()
-        // todo check how this encoding work with other parts
         .map(|fline| montgomery_encode(&fline.element))
         .collect::<Vec<_>>();
 
@@ -430,28 +445,11 @@ pub fn gen_fri_merkle_statement_call(
         output_layer_values,
         input_layer_inverses,
         output_layer_inverses,
-        // refactor these interleaved into this struct
+        // todo: refactor these interleaved into this struct
         input_interleaved,
         output_interleaved,
         proof,
     }
-}
-
-fn parse_merkles_extra(extra_annot_lines: Vec<&str>) -> Result<MerkleExtrasDict, regex::Error> {
-    let mut merkle_extras_dict = MerkleExtrasDict::new();
-
-    for line in extra_annot_lines {
-        if !is_merkle_line(line) {
-            continue;
-        }
-        let mline = parse_merkle_line(line)?;
-        merkle_extras_dict
-            .entry(mline.name.clone())
-            .or_default()
-            .push(mline);
-    }
-
-    Ok(merkle_extras_dict)
 }
 
 fn parse_merkles_original(
@@ -587,7 +585,7 @@ pub fn parse_fri_merkles_original(
                     merkle_commits_dict.insert(cline.name.clone(), cline);
                     trace_commitment_counter = new_trace_commitment_counter;
                 }
-                Err(e) => return Err(e.into()),
+                Err(e) => return Err(e),
             }
         } else if is_eval_point_line(&line) {
             let epline = parse_eval_point_line(&line)?;
@@ -650,7 +648,7 @@ fn single_column_merkle_patch(
             .map(|mline| mline.node.leading_zeros() as usize - 1)
             .collect();
         // Ensure all heights are the same
-        let height = *heights.get(0).ok_or("No heights found")?;
+        let height = *heights.first().ok_or("No heights found")?;
         if !heights.iter().all(|&h| h == height) {
             return Err(From::from("Mismatched heights"));
         }
@@ -712,14 +710,7 @@ fn extract_proof_and_annotations(
 
 pub fn split_fri_merkle_statements(
     proof_json: AnnotatedProof,
-) -> Result<
-    (
-        Vec<u8>,
-        HashMap<String, MerkleStatement>,
-        Vec<FRIMerkleStatement>,
-    ),
-    Box<dyn std::error::Error>,
-> {
+) -> Result<SplitProofs, Box<dyn std::error::Error>> {
     // Slice starting from the third character
     let sliced_proof_hex = &proof_json.proof_hex[2..];
 
@@ -792,7 +783,9 @@ pub fn split_fri_merkle_statements(
         main_proof.extend_from_slice(&hash);
     }
 
-    // println!("main_proof: {}", hex::encode(&main_proof));
-
-    Ok((main_proof, merkle_statements, fri_merkle_statements))
+    Ok(SplitProofs {
+        main_proof,
+        merkle_statements,
+        fri_merkle_statements,
+    })
 }

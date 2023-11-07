@@ -5,8 +5,6 @@ use stark_evm_adapter::annotation_parser::split_fri_merkle_statements;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ethers::types::U256;
-    use ethers::utils::hex;
     use serde_json::{self, Value};
     use stark_evm_adapter::annotation_parser::AnnotatedProof;
     use std::fs::File;
@@ -18,9 +16,39 @@ mod tests {
         let reader = std::io::BufReader::new(file);
         let annotated_proof: AnnotatedProof = serde_json::from_reader(reader).unwrap();
 
-        let (main_proof, merkle_statements, fri_merkle_statements) =
-            split_fri_merkle_statements(annotated_proof).unwrap();
+        let split_proofs = split_fri_merkle_statements(annotated_proof).unwrap();
 
+        let expected_split_fri_proofs = get_expected_split_proofs();
+        let serialized_split_proofs = serde_json::to_value(&split_proofs).unwrap();
+
+        
+        // assert merkle_statements 
+        for (trace_name, trace_merkle) in expected_split_fri_proofs["merkle_statements"].as_object().unwrap() {
+            for (key, value) in trace_merkle.as_object().unwrap() {
+                assert_eq!(
+                    *value,
+                    serialized_split_proofs["merkle_statements"][trace_name][key]
+                );
+            }
+        }
+        // assert fri_merkle_statements
+        for (index, fri_merkle_statement) in expected_split_fri_proofs["fri_merkle_statements"].as_array().unwrap().iter().enumerate() {
+            for (key, value) in fri_merkle_statement.as_object().unwrap() {
+                assert_eq!(
+                    *value,
+                    serialized_split_proofs["fri_merkle_statements"][index][key]
+                );
+            }
+        }
+
+        // assert main_proof
+        assert_eq!(
+            expected_split_fri_proofs["main_proof"],
+            serialized_split_proofs["main_proof"]
+        );
+    }
+
+    fn get_expected_split_proofs() -> Value {
         let mut file = File::open("tests/fixtures/expected_split_proofs.json")
             .expect("unable to open output file");
         let mut contents = String::new();
@@ -29,57 +57,6 @@ mod tests {
 
         let expected_split_fri_proofs_value: Value =
             serde_json::from_str(&contents).expect("unable to parse output JSON");
-
-        for (_, obj) in merkle_statements.iter().enumerate() {
-            let obj_json = obj.1.to_json();
-            for (key, value) in obj_json.as_object().unwrap() {
-                assert_eq!(
-                    value,
-                    &expected_split_fri_proofs_value["merkle_statements"][obj.0][key]
-                );
-            }
-        }
-
-        for (index, obj) in fri_merkle_statements.iter().enumerate() {
-            let keys: Vec<_> = vec![
-                "expected_root",
-                "evaluation_point",
-                "fri_step_size",
-                "input_layer_queries",
-                "output_layer_queries",
-                "input_layer_values",
-                "output_layer_values",
-                "input_layer_inverses",
-                "output_layer_inverses",
-                "input_interleaved",
-                "output_interleaved",
-                "proof",
-            ];
-            let obj_val = serde_json::to_value(obj).unwrap();
-            for key in &keys {
-                assert_eq!(
-                    &obj_val[*key],
-                    &expected_split_fri_proofs_value["fri_merkle_statements"][index][key]
-                );
-            }
-        }
-        // for (index, obj) in fri_merkle_statements.iter().enumerate() {
-
-        //     assert_eq!(
-        //         obj.expected_root,
-        //         U256::from_dec_str(
-        //             &expected_split_fri_proofs_value["fri_merkle_statements"][index]["expected_root"]
-        //                 .to_string()
-        //         ).unwrap()
-        //     );
-        // }
-        
-
-        assert_eq!(
-            hex::encode(main_proof),
-            expected_split_fri_proofs_value["main_proof"]
-                .to_string()
-                .replace('\"', "")
-        );
+        expected_split_fri_proofs_value
     }
 }
