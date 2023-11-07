@@ -18,6 +18,14 @@ use crate::fri_merkle_statement::FriMerkleStatement;
 use crate::merkle_statement::MerkleStatement;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct AnnotatedProof {
+    // todo how can we rename this property while mapping to the proof_hex key in json?
+    proof_hex: String,
+    annotations: Vec<String>,
+    extra_annotations: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MerkleLine {
     pub name: String,
     // todo: check if better to change to usize
@@ -53,7 +61,7 @@ pub struct CommitmentLine {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct EvalPointLine {
     pub name: String,
-    pub point: String, // In Python, it could be more than just a String. Adjust accordingly.
+    pub point: String, 
     pub annotation: String,
 }
 
@@ -63,9 +71,6 @@ pub struct FriExtras {
     pub inverses: Vec<FriXInvLine>,
 }
 
-// For dictionaries in Python, we use HashMaps in Rust.
-// todo refactor it to be a struct that is not based on serde_json, which should only be utilized at the stage of saving output file
-pub type MerkleFactRegistryInput = HashMap<String, serde_json::Value>;
 pub type MerkleExtrasDict = HashMap<String, Vec<MerkleLine>>;
 // todo refactor it to be a struct that is not based on serde_json, which should only be utilized at the stage of saving output file
 pub type FRIMerkleFactRegistryInput = HashMap<String, serde_json::Value>; // Adjust according to the structure
@@ -785,6 +790,7 @@ fn single_column_merkle_patch(
 fn extract_proof_and_annotations(
     proof_json: Value,
 ) -> Result<(Vec<u8>, Vec<String>, Vec<String>), Box<dyn Error>> {
+    // todo can AnnotatedProof deserializer validate these?
     let orig_proof_hex = proof_json["proof_hex"]
         .as_str()
         .ok_or("proof_hex field is missing or not a string")?;
@@ -810,7 +816,7 @@ fn extract_proof_and_annotations(
 }
 
 pub fn split_fri_merkle_statements(
-    proof_json: Value,
+    proof_json: AnnotatedProof,
 ) -> Result<
     (
         Vec<u8>,
@@ -819,7 +825,21 @@ pub fn split_fri_merkle_statements(
     ),
     Box<dyn std::error::Error>,
 > {
-    let (orig_proof, annot_lines, extra_annot_lines) = extract_proof_and_annotations(proof_json)?;
+    // let (orig_proof, annot_lines, extra_annot_lines) = extract_proof_and_annotations(proof_json)?;
+    // let orig_proof = hex::decode(proof_json.proof_hex.join("")[2..])?;
+    // let orig_proof = hex::decode(&orig_proof_hex[2..])?;
+    // Concatenate the strings from the vector
+    // let concatenated_proof_hex = proof_json.proof_hex.join("");
+
+    // Slice starting from the third character
+    let sliced_proof_hex = &proof_json.proof_hex[2..];
+
+    // Decode the hexadecimal string
+    let orig_proof = hex::decode(sliced_proof_hex)?;
+
+    let annot_lines = proof_json.annotations;
+    let extra_annot_lines = proof_json.extra_annotations;
+
     let (mut merkle_extras_dict, fri_extras_list) =
         parse_fri_merkles_extra(extra_annot_lines.iter().map(|s| s.as_str()).collect())?;
     let (

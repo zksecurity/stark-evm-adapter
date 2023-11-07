@@ -7,22 +7,18 @@ mod tests {
     use super::*;
     use ethers::utils::hex;
     use serde_json::{self, Value};
+    use stark_evm_adapter::annotation_parser::AnnotatedProof;
     use std::fs::File;
     use std::io::Read;
 
     #[test]
     fn test_split_fri_merkle_statements() {
-        let mut file =
-            File::open("tests/fixtures/annotated_proof.json").expect("unable to open input file");
-        let mut contents = String::new();
-        file.read_to_string(&mut contents)
-            .expect("unable to read file");
-
-        let input_json: Value =
-            serde_json::from_str(&contents).expect("unable to parse input JSON");
+        let file = std::fs::File::open("tests/fixtures/annotated_proof.json").unwrap();
+        let reader = std::io::BufReader::new(file);
+        let annotated_proof: AnnotatedProof = serde_json::from_reader(reader).unwrap();
 
         let (main_proof, merkle_statements, fri_merkle_statements) =
-            split_fri_merkle_statements(input_json).unwrap();
+            split_fri_merkle_statements(annotated_proof).unwrap();
 
         let mut file = File::open("tests/fixtures/expected_split_proofs.json")
             .expect("unable to open output file");
