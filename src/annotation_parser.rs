@@ -265,10 +265,14 @@ fn line_to_indices(line: &str) -> (usize, usize) {
 
     match re.captures(line) {
         Some(caps) => {
-            let start = caps.get(1).map_or(0, |m| m.as_str().parse::<usize>().unwrap_or(0));
-            let end = caps.get(2).map_or(0, |m| m.as_str().parse::<usize>().unwrap_or(0));
+            let start = caps
+                .get(1)
+                .map_or(0, |m| m.as_str().parse::<usize>().unwrap_or(0));
+            let end = caps
+                .get(2)
+                .map_or(0, |m| m.as_str().parse::<usize>().unwrap_or(0));
             (start, end)
-        },
+        }
         None => (0, 0),
     }
 }
@@ -410,7 +414,11 @@ pub fn gen_fri_merkle_statement_call(
         serde_json::Value::Array(
             input_layer_values
                 .iter()
-                .map(|&val| serde_json::Value::Number(serde_json::Number::from_str(&val.to_string()).unwrap()))
+                .map(|&val| {
+                    serde_json::Value::Number(
+                        serde_json::Number::from_str(&val.to_string()).unwrap(),
+                    )
+                })
                 .collect(),
         ),
     );
@@ -426,7 +434,11 @@ pub fn gen_fri_merkle_statement_call(
         serde_json::Value::Array(
             output_layer_values
                 .iter()
-                .map(|&val| serde_json::Value::Number(serde_json::Number::from_str(&val.to_string()).unwrap()))
+                .map(|&val| {
+                    serde_json::Value::Number(
+                        serde_json::Number::from_str(&val.to_string()).unwrap(),
+                    )
+                })
                 .collect(),
         ),
     );
@@ -441,7 +453,11 @@ pub fn gen_fri_merkle_statement_call(
         serde_json::Value::Array(
             input_layer_inverses
                 .iter()
-                .map(|&inv| serde_json::Value::Number(serde_json::Number::from_str(&inv.to_string()).unwrap()))
+                .map(|&inv| {
+                    serde_json::Value::Number(
+                        serde_json::Number::from_str(&inv.to_string()).unwrap(),
+                    )
+                })
                 .collect(),
         ),
     );
@@ -456,7 +472,11 @@ pub fn gen_fri_merkle_statement_call(
         serde_json::Value::Array(
             output_layer_inverses
                 .iter()
-                .map(|&inv| serde_json::Value::Number(serde_json::Number::from_str(&inv.to_string()).unwrap()))
+                .map(|&inv| {
+                    serde_json::Value::Number(
+                        serde_json::Number::from_str(&inv.to_string()).unwrap(),
+                    )
+                })
                 .collect(),
         ),
     );
@@ -479,7 +499,6 @@ pub fn gen_fri_merkle_statement_call(
         )),
     );
 
-
     statement_json.insert(
         "output_interleaved".to_string(),
         serde_json::Value::Array(interleave(
@@ -498,8 +517,6 @@ pub fn gen_fri_merkle_statement_call(
                 .clone(),
         )),
     );
-
-
 
     statement_json.insert(
         "proof".to_string(),
@@ -861,9 +878,7 @@ pub fn split_fri_merkle_statements(
             .as_array()
             .unwrap()
             .iter()
-            .map(|val| {
-                Token::Uint(U256::from_dec_str(&val.to_string()).unwrap())
-            })
+            .map(|val| Token::Uint(U256::from_dec_str(&val.to_string()).unwrap()))
             .collect();
 
         let encoded = ethers::abi::encode_packed(&[Token::Array(fri_output_interleaved)])?;
@@ -872,7 +887,6 @@ pub fn split_fri_merkle_statements(
     }
 
     // println!("main_proof: {}", hex::encode(&main_proof));
-
 
     Ok((main_proof, merkle_statements, fri_merkle_statements))
 }
