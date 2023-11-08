@@ -13,3 +13,7 @@ num-bigint = "0.4"
 num-traits = "0.2"
 ethers = "2.0"
 thiserror = "1.0.50"
+serde_with = { version = "3.4.0", features = ["hex"] }
+
+[dev-dependencies]
+assert-json-diff = "2.0.2"

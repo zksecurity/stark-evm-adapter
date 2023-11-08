@@ -4,12 +4,13 @@ use ethers::{types::U256, utils::hex};
 use num_bigint::BigUint;
 use num_traits::{Num, One};
 use regex::Regex;
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
 use std::collections::{HashMap, HashSet};
 
+use crate::errors::ParseError;
 use crate::fri_merkle_statement::FRIMerkleStatement;
 use crate::merkle_statement::MerkleStatement;
-use crate::ParseError;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AnnotatedProof {
@@ -77,20 +78,13 @@ pub struct FriMerklesOriginal {
     pub merkle_patches: HashSet<String>,
 }
 
-#[derive(Serialize, Debug)]
+#[serde_as]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct SplitProofs {
-    #[serde(serialize_with = "serialize_as_hex")]
+    #[serde_as(as = "serde_with::hex::Hex")]
     pub main_proof: Vec<u8>,
     pub merkle_statements: HashMap<String, MerkleStatement>,
     pub fri_merkle_statements: Vec<FRIMerkleStatement>,
-}
-
-fn serialize_as_hex<S>(bytes: &Vec<u8>, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    let hex_string = hex::encode(bytes);
-    serializer.serialize_str(&hex_string)
 }
 
 // Parses hex strings and pads with zeros to make it 64 characters long
@@ -177,7 +171,7 @@ fn is_fri_line(line: &str) -> bool {
         && !line.contains("Virtual Oracle")
 }
 
-// Parses a FRI decommitment line
+/// Parses a FRI decommitment line
 fn parse_fri_line(line: &str) -> Result<FriLine, ParseError> {
     let parts: Vec<&str> = line.split('/').collect();
     let name = parts
@@ -218,12 +212,12 @@ fn parse_fri_line(line: &str) -> Result<FriLine, ParseError> {
     })
 }
 
-// Checks if a line is a FRI xInv line
+/// Checks if a line is a FRI xInv line
 fn is_fri_xinv_line(line: &str) -> bool {
     line.contains("Decommitment") && line.contains("xInv") && line.contains("Field Element")
 }
 
-// Parses a FRI xInv line
+/// Parses a FRI xInv line
 fn parse_fri_xinv_line(line: &str) -> Result<FriXInvLine, ParseError> {
     let parts: Vec<&str> = line.split('/').collect();
     let name = parts
@@ -256,12 +250,12 @@ fn parse_fri_xinv_line(line: &str) -> Result<FriXInvLine, ParseError> {
     })
 }
 
-// Checks if a line is a commitment line
+/// Checks if a line is a commitment line
 fn is_commitment_line(line: &str) -> bool {
     line.contains("Commitment") && line.contains("Hash")
 }
 
-// Parses a commitment line
+/// Parses a commitment line
 fn parse_commitment_line(
     line: &str,
     trace_commitment_counter: &mut usize,
@@ -301,12 +295,12 @@ fn parse_commitment_line(
     ))
 }
 
-// Check if a line is an evaluation point line
+/// Check if a line is an evaluation point line
 fn is_eval_point_line(line: &str) -> bool {
     line.contains("Evaluation point") && line.contains("Layer")
 }
 
-// Parses an evaluation point line
+/// Parses an evaluation point line
 fn parse_eval_point_line(line: &str) -> Result<EvalPointLine, ParseError> {
     let parts: Vec<&str> = line.split('/').collect();
     let name = parts
@@ -326,7 +320,7 @@ fn parse_eval_point_line(line: &str) -> Result<EvalPointLine, ParseError> {
     })
 }
 
-// Parses a proof annotation line to indices
+/// Parses a proof annotation line to indices
 fn line_to_indices(line: &str) -> Result<(usize, usize), ParseError> {
     if !line.starts_with("P->V[") {
         Ok((0, 0))
@@ -343,7 +337,7 @@ fn line_to_indices(line: &str) -> Result<(usize, usize), ParseError> {
     }
 }
 
-// Function to generate a Merkle statement call
+/// Function to generate a Merkle statement call
 pub fn gen_merkle_statement_call(
     merkle_extras: Vec<MerkleLine>,
     merkle_original: Vec<MerkleLine>,
@@ -664,34 +658,6 @@ fn single_column_merkle_patch(
     }
     Ok(())
 }
-
-// todo: use AnnotatedProof deserializer to validate these
-// fn extract_proof_and_annotations(
-//     proof_json: Value,
-// ) -> Result<(Vec<u8>, Vec<String>, Vec<String>), Box<dyn Error>> {
-//     let orig_proof_hex = proof_json["proof_hex"]
-//         .as_str()
-//         .ok_or("proof_hex field is missing or not a string")?;
-//     let orig_proof = hex::decode(&orig_proof_hex[2..])?;
-
-//     let annot_lines_json = proof_json["annotations"]
-//         .as_array()
-//         .ok_or("annotations field is missing or not an array")?;
-//     let annot_lines: Vec<String> = annot_lines_json[2..(annot_lines_json.len() - 8)]
-//         .iter()
-//         .map(|val| val.to_string())
-//         .collect();
-
-//     let extra_annot_lines_json = proof_json["extra_annotations"]
-//         .as_array()
-//         .ok_or("extra_annotations field is missing or not an array")?;
-//     let extra_annot_lines: Vec<String> = extra_annot_lines_json
-//         .iter()
-//         .map(|val| val.to_string())
-//         .collect();
-
-//     Ok((orig_proof, annot_lines, extra_annot_lines))
-// }
 
 pub fn split_fri_merkle_statements(proof_json: AnnotatedProof) -> Result<SplitProofs, ParseError> {
     // Slice starting from the third character
