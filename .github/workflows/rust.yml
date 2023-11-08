@@ -1,0 +1,81 @@
+name: Rust CI
+
+on:
+  push:
+  pull_request:
+
+env:
+  # https://doc.rust-lang.org/cargo/reference/profiles.html#release
+  RUSTFLAGS: -Coverflow-checks=y -Cdebug-assertions=y
+  # https://doc.rust-lang.org/cargo/reference/profiles.html#incremental
+  CARGO_INCREMENTAL: 1
+  # https://nexte.st/book/pre-built-binaries.html#using-nextest-in-github-actions
+  CARGO_TERM_COLOR: always
+
+jobs:
+  run_checks:
+    strategy:
+      matrix:
+        rust_toolchain_version: ["1.72"]
+
+    runs-on: ubuntu-latest
+    name: Run some basic checks and tests
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4.1.1
+
+      # as action-rs does not seem to be maintained anymore, building from
+      # scratch the environment using rustup
+      - name: Setup Rust toolchain ${{ matrix.rust_toolchain_version }}
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf -o rustup-init \
+          https://static.rust-lang.org/rustup/dist/x86_64-unknown-linux-gnu/rustup-init
+          chmod +x ./rustup-init
+          ./rustup-init -y --default-toolchain "${{ matrix.rust_toolchain_version }}" --profile default
+          rm ./rustup-init
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+          # overwriting default rust-toolchain
+          echo ${{ matrix.rust_toolchain_version }} > rust-toolchain
+
+      #
+      # Coding guidelines
+      #
+
+      - name: Enforce formating
+        run: |
+          eval $(opam env)
+          cargo fmt -- --check
+
+      - name: Lint (clippy)
+        run: |
+          eval $(opam env)
+          cargo clippy --all-features --all-targets --tests -- -W clippy::all -D warnings
+
+      #
+      # Build
+      #
+
+      - name: Ensure that everything builds
+        run: |
+          eval $(opam env)
+          cargo build --release --all-targets --all-features
+
+      #
+      # Tests
+      #
+
+      # https://nexte.st/book/pre-built-binaries.html#using-nextest-in-github-actions
+      - name: Install latest nextest release
+        run: |
+          eval $(opam env)
+          cargo install cargo-nextest --locked
+
+      - name: Test with latest nextest release (faster than cargo test)
+        run: |
+          eval $(opam env)
+          cargo nextest run --all-features --release
+
+      - name: Doc tests
+        run: |
+          eval $(opam env)
+          cargo test --all-features --release --doc

@@ -1,0 +1,42 @@
+name: Deploy Docs to GitHub Pages
+
+on:
+  push:
+    branches:
+      - master
+
+env:
+  RUST_TOOLCHAIN_VERSION: "nightly"
+
+jobs:
+  release:
+    name: GitHub Pages
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4.1.1
+
+      # as action-rs does not seem to be maintained anymore, building from
+      # scratch the environment using rustup
+      - name: Setup nightly Rust toolchain
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf -o rustup-init \
+          https://static.rust-lang.org/rustup/dist/x86_64-unknown-linux-gnu/rustup-init
+          chmod +x ./rustup-init
+          ./rustup-init -y --default-toolchain "$RUST_TOOLCHAIN_VERSION" --profile default
+          rm ./rustup-init
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+          # overwriting default rust-toolchain
+          echo $RUST_TOOLCHAIN_VERSION > rust-toolchain
+
+      - name: Build Rust Documentation
+        run: |
+          eval $(opam env)
+          RUSTDOCFLAGS="--enable-index-page -Zunstable-options" cargo +nightly doc --all --no-deps
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./target/doc
