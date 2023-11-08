@@ -715,19 +715,23 @@ pub fn split_fri_merkle_statements(proof_json: AnnotatedProof) -> Result<SplitPr
         })
         .collect::<Result<Vec<FRIMerkleStatement>, ParseError>>()?;
 
-    let mut main_proof = fri_merkles_original.original_proof;
+    // main proof
+    let main_proof = {
+        let mut main_proof = fri_merkles_original.original_proof;
 
-    for fri in &fri_merkle_statements[..fri_merkle_statements.len() - 1] {
-        let fri_output_interleaved = fri
-            .output_interleaved
-            .iter()
-            .map(|val| Token::Uint(*val))
-            .collect();
+        for fri in &fri_merkle_statements[..fri_merkle_statements.len() - 1] {
+            let fri_output_interleaved = fri
+                .output_interleaved
+                .iter()
+                .map(|val| Token::Uint(*val))
+                .collect();
 
-        let encoded = ethers::abi::encode_packed(&[Token::Array(fri_output_interleaved)])?;
-        let hash = keccak256(encoded);
-        main_proof.extend_from_slice(&hash);
-    }
+            let encoded = ethers::abi::encode_packed(&[Token::Array(fri_output_interleaved)])?;
+            let hash = keccak256(encoded);
+            main_proof.extend_from_slice(&hash);
+        }
+        main_proof
+    };
 
     Ok(SplitProofs {
         main_proof,
