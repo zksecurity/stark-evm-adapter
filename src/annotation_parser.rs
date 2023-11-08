@@ -5,7 +5,6 @@ use num_bigint::BigUint;
 use num_traits::{Num, One};
 use regex::Regex;
 use serde::{Deserialize, Serialize, Serializer};
-use serde_json::Value;
 use std::{
     collections::{HashMap, HashSet},
     error::Error,
@@ -68,6 +67,17 @@ pub struct FriExtras {
 }
 
 pub type MerkleExtrasDict = HashMap<String, Vec<MerkleLine>>;
+
+pub struct FriMerklesOriginal {
+    pub merkle_originals: MerkleExtrasDict,
+    pub merkle_commitments: HashMap<String, CommitmentLine>,
+    pub fri_originals: HashMap<String, Vec<FriLine>>,
+    pub eval_points: Vec<EvalPointLine>,
+    pub fri_names: Vec<String>,
+    pub original_proof: Vec<u8>,
+    pub main_annotation: String,
+    pub merkle_patches: HashSet<String>,
+}
 
 #[derive(Serialize, Debug)]
 pub struct SplitProofs {
@@ -276,7 +286,7 @@ fn parse_eval_point_line(line: &str) -> Result<EvalPointLine, Box<dyn std::error
 
 // Parses a proof annotation line to indices
 fn line_to_indices(line: &str) -> (usize, usize) {
-    let re = Regex::new(r"P->V\[(\d+):(\d+)\]").unwrap(); // Note: In production, don't unwrap here.
+    let re = Regex::new(r"P->V\[(\d+):(\d+)\]").unwrap();
 
     match re.captures(line) {
         Some(caps) => {
@@ -452,57 +462,6 @@ pub fn gen_fri_merkle_statement_call(
     }
 }
 
-fn parse_merkles_original(
-    orig_proof: &[u8],
-    annot_lines: Vec<&str>,
-) -> Result<
-    (
-        MerkleExtrasDict,
-        HashMap<String, CommitmentLine>,
-        Vec<u8>,
-        String,
-    ),
-    Box<dyn Error>,
-> {
-    let mut merkle_original_dict = MerkleExtrasDict::new();
-    let mut merkle_commits_dict = HashMap::new();
-    let mut main_proof = Vec::new();
-    let mut main_annot = String::new();
-    let mut trace_commitment_counter = 0;
-
-    for line in annot_lines {
-        if is_commitment_line(line) {
-            match parse_commitment_line(line, &mut trace_commitment_counter) {
-                Ok((cline, new_trace_commitment_counter)) => {
-                    merkle_commits_dict.insert(cline.name.clone(), cline);
-                    trace_commitment_counter = new_trace_commitment_counter;
-                }
-                Err(e) => {
-                    return Err(e);
-                }
-            }
-        } else if !is_merkle_line(line) {
-            main_annot.push_str(line);
-            main_annot.push('\n');
-            let (start, end) = line_to_indices(line);
-            main_proof.extend_from_slice(&orig_proof[start..end]);
-        } else {
-            let mline = parse_merkle_line(line)?;
-            merkle_original_dict
-                .entry(mline.name.clone())
-                .or_default()
-                .push(mline);
-        }
-    }
-
-    Ok((
-        merkle_original_dict,
-        merkle_commits_dict,
-        main_proof,
-        main_annot,
-    ))
-}
-
 fn parse_fri_merkles_extra(
     extra_annot_lines: Vec<&str>,
 ) -> Result<(MerkleExtrasDict, Vec<FriExtras>), Box<dyn Error>> {
@@ -555,19 +514,7 @@ fn parse_fri_merkles_extra(
 pub fn parse_fri_merkles_original(
     orig_proof: Vec<u8>,
     annot_lines: Vec<String>,
-) -> Result<
-    (
-        MerkleExtrasDict,
-        HashMap<String, CommitmentLine>,
-        HashMap<String, Vec<FriLine>>,
-        Vec<EvalPointLine>,
-        Vec<String>,
-        Vec<u8>,
-        String,
-        HashSet<String>,
-    ),
-    Box<dyn Error>,
-> {
+) -> Result<FriMerklesOriginal, Box<dyn Error>> {
     let mut merkle_original_dict = MerkleExtrasDict::new();
     let mut merkle_commits_dict = HashMap::new();
     let mut fri_original_dict = HashMap::new();
@@ -621,16 +568,16 @@ pub fn parse_fri_merkles_original(
         }
     }
 
-    Ok((
-        merkle_original_dict,
-        merkle_commits_dict,
-        fri_original_dict,
-        eval_points_list,
+    Ok(FriMerklesOriginal {
+        merkle_originals: merkle_original_dict,
+        merkle_commitments: merkle_commits_dict,
+        fri_originals: fri_original_dict,
+        eval_points: eval_points_list,
         fri_names,
-        main_proof,
-        main_annot,
+        original_proof: main_proof,
+        main_annotation: main_annot,
         merkle_patches,
-    ))
+    })
 }
 
 fn single_column_merkle_patch(
@@ -680,33 +627,33 @@ fn single_column_merkle_patch(
     Ok(())
 }
 
-fn extract_proof_and_annotations(
-    proof_json: Value,
-) -> Result<(Vec<u8>, Vec<String>, Vec<String>), Box<dyn Error>> {
-    // todo: use AnnotatedProof deserializer to validate these
-    let orig_proof_hex = proof_json["proof_hex"]
-        .as_str()
-        .ok_or("proof_hex field is missing or not a string")?;
-    let orig_proof = hex::decode(&orig_proof_hex[2..])?;
+// todo: use AnnotatedProof deserializer to validate these
+// fn extract_proof_and_annotations(
+//     proof_json: Value,
+// ) -> Result<(Vec<u8>, Vec<String>, Vec<String>), Box<dyn Error>> {
+//     let orig_proof_hex = proof_json["proof_hex"]
+//         .as_str()
+//         .ok_or("proof_hex field is missing or not a string")?;
+//     let orig_proof = hex::decode(&orig_proof_hex[2..])?;
 
-    let annot_lines_json = proof_json["annotations"]
-        .as_array()
-        .ok_or("annotations field is missing or not an array")?;
-    let annot_lines: Vec<String> = annot_lines_json[2..(annot_lines_json.len() - 8)]
-        .iter()
-        .map(|val| val.to_string())
-        .collect();
+//     let annot_lines_json = proof_json["annotations"]
+//         .as_array()
+//         .ok_or("annotations field is missing or not an array")?;
+//     let annot_lines: Vec<String> = annot_lines_json[2..(annot_lines_json.len() - 8)]
+//         .iter()
+//         .map(|val| val.to_string())
+//         .collect();
 
-    let extra_annot_lines_json = proof_json["extra_annotations"]
-        .as_array()
-        .ok_or("extra_annotations field is missing or not an array")?;
-    let extra_annot_lines: Vec<String> = extra_annot_lines_json
-        .iter()
-        .map(|val| val.to_string())
-        .collect();
+//     let extra_annot_lines_json = proof_json["extra_annotations"]
+//         .as_array()
+//         .ok_or("extra_annotations field is missing or not an array")?;
+//     let extra_annot_lines: Vec<String> = extra_annot_lines_json
+//         .iter()
+//         .map(|val| val.to_string())
+//         .collect();
 
-    Ok((orig_proof, annot_lines, extra_annot_lines))
-}
+//     Ok((orig_proof, annot_lines, extra_annot_lines))
+// }
 
 pub fn split_fri_merkle_statements(
     proof_json: AnnotatedProof,
@@ -722,54 +669,52 @@ pub fn split_fri_merkle_statements(
 
     let (mut merkle_extras_dict, fri_extras_list) =
         parse_fri_merkles_extra(extra_annot_lines.iter().map(|s| s.as_str()).collect())?;
-    let (
-        merkle_original_dict,
-        merkle_commits_dict,
-        fri_original_dict,
-        eval_points_list,
-        fri_names,
-        mut main_proof,
-        _,
-        merkle_patches,
-    ) = parse_fri_merkles_original(orig_proof, annot_lines.clone())?;
+    let fri_merkles_original = parse_fri_merkles_original(orig_proof, annot_lines.clone())?;
     let merkle_names: HashSet<_> = HashSet::from_iter(merkle_extras_dict.keys().cloned());
     assert_eq!(
         merkle_names,
-        HashSet::from_iter(merkle_original_dict.keys().cloned())
+        HashSet::from_iter(fri_merkles_original.merkle_originals.keys().cloned())
     );
 
-    if !merkle_patches.is_empty() {
-        single_column_merkle_patch(&merkle_patches, &mut merkle_extras_dict, &annot_lines)?;
+    if !fri_merkles_original.merkle_patches.is_empty() {
+        single_column_merkle_patch(
+            &fri_merkles_original.merkle_patches,
+            &mut merkle_extras_dict,
+            &annot_lines,
+        )?;
     }
 
     let merkle_statements = merkle_names
         .into_iter()
-        .filter(|name| !fri_original_dict.contains_key(name))
+        .filter(|name| !fri_merkles_original.fri_originals.contains_key(name))
         .map(|name| {
             let statement = gen_merkle_statement_call(
                 merkle_extras_dict[&name].clone(),
-                merkle_original_dict[&name].clone(),
-                merkle_commits_dict[&name].clone(),
+                fri_merkles_original.merkle_originals[&name].clone(),
+                fri_merkles_original.merkle_commitments[&name].clone(),
             );
             (name, statement)
         })
         .collect::<HashMap<_, _>>();
 
-    let fri_merkle_statements: Vec<FRIMerkleStatement> = fri_names
+    let fri_merkle_statements: Vec<FRIMerkleStatement> = fri_merkles_original
+        .fri_names
         .into_iter()
         .enumerate()
         .map(|(i, name)| {
             gen_fri_merkle_statement_call(
                 fri_extras_list[i].clone(),
                 fri_extras_list[i + 1].clone(),
-                fri_original_dict[&name].clone(),
-                merkle_original_dict[&name].clone(),
+                fri_merkles_original.fri_originals[&name].clone(),
+                fri_merkles_original.merkle_originals[&name].clone(),
                 merkle_extras_dict[&name].clone(),
-                merkle_commits_dict[&name].clone(),
-                eval_points_list[i].clone(),
+                fri_merkles_original.merkle_commitments[&name].clone(),
+                fri_merkles_original.eval_points[i].clone(),
             )
         })
         .collect();
+
+    let mut main_proof = fri_merkles_original.original_proof;
 
     for fri in &fri_merkle_statements[..fri_merkle_statements.len() - 1] {
         let fri_output_interleaved = fri

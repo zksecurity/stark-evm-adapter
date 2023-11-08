@@ -1,5 +1,5 @@
 use ethers::types::U256;
-use serde::{Serialize, Serializer};
+use serde::Serialize;
 
 use crate::{serialize_u256_as_number, serialize_vec_u256_as_number};
 
@@ -29,4 +29,3 @@ pub struct FRIMerkleStatement {
     #[serde(serialize_with = "serialize_vec_u256_as_number")]
     pub proof: Vec<U256>,
 }
-
