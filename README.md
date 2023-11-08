@@ -25,7 +25,5 @@ let annotated_proof: AnnotatedProof = serde_json::from_reader(reader).unwrap();
 
 // split the proof
 let split_proofs = split_fri_merkle_statements(annotated_proof).unwrap();
-
-let expected_split_fri_proofs = get_expected_split_proofs();
 println!("{}", serde_json::to_string_pretty(&split_proofs).unwrap());
 ```
