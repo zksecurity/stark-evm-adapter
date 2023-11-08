@@ -735,6 +735,10 @@
 <a href="#735" id="735">735</a>
 <a href="#736" id="736">736</a>
 <a href="#737" id="737">737</a>
+<a href="#738" id="738">738</a>
+<a href="#739" id="739">739</a>
+<a href="#740" id="740">740</a>
+<a href="#741" id="741">741</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>ethers::abi::Token;
 <span class="kw">use </span>ethers::utils::keccak256;
 <span class="kw">use </span>ethers::{types::U256, utils::hex};
@@ -1452,19 +1456,23 @@
         })
         .collect::&lt;<span class="prelude-ty">Result</span>&lt;Vec&lt;FRIMerkleStatement&gt;, ParseError&gt;&gt;()<span class="question-mark">?</span>;
 
-    <span class="kw">let </span><span class="kw-2">mut </span>main_proof = fri_merkles_original.original_proof;
+    <span class="comment">// main proof
+    </span><span class="kw">let </span>main_proof = {
+        <span class="kw">let </span><span class="kw-2">mut </span>main_proof = fri_merkles_original.original_proof;
 
-    <span class="kw">for </span>fri <span class="kw">in </span><span class="kw-2">&amp;</span>fri_merkle_statements[..fri_merkle_statements.len() - <span class="number">1</span>] {
-        <span class="kw">let </span>fri_output_interleaved = fri
-            .output_interleaved
-            .iter()
-            .map(|val| Token::Uint(<span class="kw-2">*</span>val))
-            .collect();
+        <span class="kw">for </span>fri <span class="kw">in </span><span class="kw-2">&amp;</span>fri_merkle_statements[..fri_merkle_statements.len() - <span class="number">1</span>] {
+            <span class="kw">let </span>fri_output_interleaved = fri
+                .output_interleaved
+                .iter()
+                .map(|val| Token::Uint(<span class="kw-2">*</span>val))
+                .collect();
 
-        <span class="kw">let </span>encoded = ethers::abi::encode_packed(<span class="kw-2">&amp;</span>[Token::Array(fri_output_interleaved)])<span class="question-mark">?</span>;
-        <span class="kw">let </span>hash = keccak256(encoded);
-        main_proof.extend_from_slice(<span class="kw-2">&amp;</span>hash);
-    }
+            <span class="kw">let </span>encoded = ethers::abi::encode_packed(<span class="kw-2">&amp;</span>[Token::Array(fri_output_interleaved)])<span class="question-mark">?</span>;
+            <span class="kw">let </span>hash = keccak256(encoded);
+            main_proof.extend_from_slice(<span class="kw-2">&amp;</span>hash);
+        }
+        main_proof
+    };
 
     <span class="prelude-val">Ok</span>(SplitProofs {
         main_proof,
