@@ -659,12 +659,10 @@ fn single_column_merkle_patch(
     Ok(())
 }
 
+/// This is the main function to use to split an [AnnotatedProof] file into a [SplitProofs] file.
 pub fn split_fri_merkle_statements(proof_json: AnnotatedProof) -> Result<SplitProofs, ParseError> {
-    // Slice starting from the third character
-    let sliced_proof_hex = &proof_json.proof_hex[2..];
-
     // Decode the hexadecimal string
-    let orig_proof = hex::decode(sliced_proof_hex)?;
+    let orig_proof = hex::decode(&proof_json.proof_hex)?;
 
     let annot_lines = proof_json.annotations;
     let extra_annot_lines = proof_json.extra_annotations;
