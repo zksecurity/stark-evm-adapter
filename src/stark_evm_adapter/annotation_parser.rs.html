@@ -735,8 +735,6 @@
 <a href="#735" id="735">735</a>
 <a href="#736" id="736">736</a>
 <a href="#737" id="737">737</a>
-<a href="#738" id="738">738</a>
-<a href="#739" id="739">739</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>ethers::abi::Token;
 <span class="kw">use </span>ethers::utils::keccak256;
 <span class="kw">use </span>ethers::{types::U256, utils::hex};
@@ -1398,12 +1396,10 @@
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">pub fn </span>split_fri_merkle_statements(proof_json: AnnotatedProof) -&gt; <span class="prelude-ty">Result</span>&lt;SplitProofs, ParseError&gt; {
-    <span class="comment">// Slice starting from the third character
-    </span><span class="kw">let </span>sliced_proof_hex = <span class="kw-2">&amp;</span>proof_json.proof_hex[<span class="number">2</span>..];
-
+<span class="doccomment">/// This is the main function to use to split an [AnnotatedProof] file into a [SplitProofs] file.
+</span><span class="kw">pub fn </span>split_fri_merkle_statements(proof_json: AnnotatedProof) -&gt; <span class="prelude-ty">Result</span>&lt;SplitProofs, ParseError&gt; {
     <span class="comment">// Decode the hexadecimal string
-    </span><span class="kw">let </span>orig_proof = hex::decode(sliced_proof_hex)<span class="question-mark">?</span>;
+    </span><span class="kw">let </span>orig_proof = hex::decode(<span class="kw-2">&amp;</span>proof_json.proof_hex)<span class="question-mark">?</span>;
 
     <span class="kw">let </span>annot_lines = proof_json.annotations;
     <span class="kw">let </span>extra_annot_lines = proof_json.extra_annotations;
