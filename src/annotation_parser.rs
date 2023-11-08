@@ -5,13 +5,11 @@ use num_bigint::BigUint;
 use num_traits::{Num, One};
 use regex::Regex;
 use serde::{Deserialize, Serialize, Serializer};
-use std::{
-    collections::{HashMap, HashSet},
-    error::Error,
-};
+use std::collections::{HashMap, HashSet};
 
 use crate::fri_merkle_statement::FRIMerkleStatement;
 use crate::merkle_statement::MerkleStatement;
+use crate::ParseError;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AnnotatedProof {
@@ -96,7 +94,7 @@ where
 }
 
 // Parses hex strings and pads with zeros to make it 64 characters long
-fn extract_hex(line: &str) -> Result<String, regex::Error> {
+fn extract_hex(line: &str) -> Result<String, ParseError> {
     let re = Regex::new(r"\(0x([0-9a-f]+)\)")?;
     Ok(re
         .captures(line)
@@ -108,24 +106,25 @@ fn is_merkle_line(line: &str) -> bool {
     line.contains("Decommitment") && line.contains("node") && line.contains("Hash")
 }
 
-fn parse_merkle_line(line: &str) -> Result<MerkleLine, regex::Error> {
+fn parse_merkle_line(line: &str) -> Result<MerkleLine, ParseError> {
     let name = line
         .split('/')
         .last()
-        .unwrap()
+        .ok_or(ParseError::InvalidLineFormat)?
         .split(':')
         .next()
-        .unwrap()
+        .ok_or(ParseError::InvalidLineFormat)?
         .to_string();
-    let node: U256 = U256::from_dec_str(
-        line.split("node ")
-            .nth(1)
-            .unwrap()
-            .split(':')
-            .next()
-            .unwrap(),
-    )
-    .unwrap();
+
+    let node_str = line
+        .split("node ")
+        .nth(1)
+        .ok_or(ParseError::InvalidLineFormat)?
+        .split(':')
+        .next()
+        .ok_or(ParseError::InvalidLineFormat)?;
+
+    let node: U256 = U256::from_dec_str(node_str)?;
 
     let digest = extract_hex(line)?;
 
@@ -141,24 +140,26 @@ fn is_merkle_data_line(line: &str) -> bool {
     line.contains("Decommitment") && line.contains("element #") && line.contains("Data")
 }
 
-fn parse_merkle_data_line(line: &str) -> Result<MerkleLine, regex::Error> {
+fn parse_merkle_data_line(line: &str) -> Result<MerkleLine, ParseError> {
     let name = line
         .split('/')
         .last()
-        .unwrap()
+        .ok_or(ParseError::InvalidLineFormat)?
         .split(':')
         .next()
-        .unwrap()
+        .ok_or(ParseError::InvalidLineFormat)?
         .to_string();
-    let node = line
+
+    let node_str = line
         .split("element #")
         .nth(1)
-        .unwrap()
+        .ok_or(ParseError::InvalidLineFormat)?
         .split(':')
         .next()
-        .unwrap()
-        .parse::<U256>()
-        .unwrap();
+        .ok_or(ParseError::InvalidLineFormat)?;
+
+    let node: U256 = U256::from_dec_str(node_str)?;
+
     let digest = extract_hex(line)?;
 
     Ok(MerkleLine {
@@ -177,29 +178,44 @@ fn is_fri_line(line: &str) -> bool {
 }
 
 // Parses a FRI decommitment line
-fn parse_fri_line(line: &str) -> Result<FriLine, Box<dyn std::error::Error>> {
-    let re = Regex::new(r"/Decommitment/(Last Layer|Layer \d+): Row (\d+), Column (\d+)").unwrap();
+fn parse_fri_line(line: &str) -> Result<FriLine, ParseError> {
+    let parts: Vec<&str> = line.split('/').collect();
+    let name = parts
+        .last()
+        .ok_or(ParseError::InvalidLineFormat)?
+        .split(':')
+        .next()
+        .ok_or(ParseError::InvalidLineFormat)?
+        .to_string();
 
-    match re.captures(line) {
-        Some(captures) => {
-            let name = captures[1].to_string();
-            let row: usize = captures[2].parse().unwrap();
-            let col: usize = captures[3].parse().unwrap();
-            let element = extract_hex(line)?;
-
-            Ok(FriLine {
-                name,
-                row,
-                col,
-                element,
-                annotation: line.to_string(),
-            })
-        }
-        None => Err(Box::new(std::io::Error::new(
-            std::io::ErrorKind::InvalidData,
-            "Failed to parse FRI line",
-        ))),
+    let row_col_part = line
+        .split(':')
+        .nth_back(1)
+        .ok_or(ParseError::InvalidLineFormat)?;
+    let row_col: Vec<&str> = row_col_part.split(',').collect();
+    if row_col.len() != 2 {
+        return Err(ParseError::InvalidLineFormat);
     }
+    let row = row_col[0]
+        .split_whitespace()
+        .nth(1)
+        .ok_or(ParseError::InvalidLineFormat)?
+        .parse::<usize>()?;
+    let col = row_col[1]
+        .split_whitespace()
+        .nth(1)
+        .ok_or(ParseError::InvalidLineFormat)?
+        .parse::<usize>()?;
+
+    let element = extract_hex(line)?;
+
+    Ok(FriLine {
+        name,
+        row,
+        col,
+        element,
+        annotation: line.to_string(),
+    })
 }
 
 // Checks if a line is a FRI xInv line
@@ -208,17 +224,28 @@ fn is_fri_xinv_line(line: &str) -> bool {
 }
 
 // Parses a FRI xInv line
-fn parse_fri_xinv_line(line: &str) -> Result<FriXInvLine, Box<dyn std::error::Error>> {
+fn parse_fri_xinv_line(line: &str) -> Result<FriXInvLine, ParseError> {
     let parts: Vec<&str> = line.split('/').collect();
-    let name = parts.last().unwrap().split(':').next().unwrap().to_string();
+    let name = parts
+        .last()
+        .ok_or(ParseError::InvalidLineFormat)?
+        .split(':')
+        .next()
+        .ok_or(ParseError::InvalidLineFormat)?
+        .to_string();
+
     let index_str = line
         .split("index ")
         .nth(1)
-        .unwrap()
+        .ok_or(ParseError::InvalidLineFormat)?
         .split(':')
         .next()
-        .unwrap();
-    let index = index_str.parse::<usize>()?;
+        .ok_or(ParseError::InvalidLineFormat)?;
+
+    let index = index_str
+        .parse::<usize>()
+        .map_err(|_| ParseError::InvalidLineFormat)?;
+
     let inv = extract_hex(line)?;
 
     Ok(FriXInvLine {
@@ -238,27 +265,35 @@ fn is_commitment_line(line: &str) -> bool {
 fn parse_commitment_line(
     line: &str,
     trace_commitment_counter: &mut usize,
-) -> Result<(CommitmentLine, usize), Box<dyn std::error::Error>> {
+) -> Result<(CommitmentLine, usize), ParseError> {
     let parts: Vec<&str> = line.split(':').collect();
-    let path_parts: Vec<&str> = parts[2].trim().split('/').collect();
+    let path_parts: Vec<&str> = parts
+        .get(2)
+        .ok_or(ParseError::InvalidLineFormat)?
+        .trim()
+        .split('/')
+        .collect();
     let name;
     let new_trace_commitment_counter;
 
     if path_parts.last() == Some(&"Commit on Trace") {
-        name = Some(format!("Trace {}", trace_commitment_counter));
+        name = format!("Trace {}", trace_commitment_counter);
         *trace_commitment_counter += 1;
         new_trace_commitment_counter = *trace_commitment_counter;
-    } else if path_parts[path_parts.len() - 2] == "Commitment" {
-        name = Some(path_parts.last().unwrap().to_string());
+    } else if path_parts.get(path_parts.len().saturating_sub(2)) == Some(&"Commitment") {
+        name = path_parts
+            .last()
+            .map(|s| s.to_string())
+            .ok_or(ParseError::InvalidLineFormat)?;
         new_trace_commitment_counter = *trace_commitment_counter;
     } else {
-        return Err(From::from("Unexpected commitment path format"));
+        return Err(ParseError::InvalidLineFormat);
     }
 
     let digest = extract_hex(line)?;
     Ok((
         CommitmentLine {
-            name: name.unwrap(),
+            name,
             digest,
             annotation: line.to_string(),
         },
@@ -272,9 +307,16 @@ fn is_eval_point_line(line: &str) -> bool {
 }
 
 // Parses an evaluation point line
-fn parse_eval_point_line(line: &str) -> Result<EvalPointLine, Box<dyn std::error::Error>> {
+fn parse_eval_point_line(line: &str) -> Result<EvalPointLine, ParseError> {
     let parts: Vec<&str> = line.split('/').collect();
-    let name = parts.last().unwrap().split(':').next().unwrap().to_string();
+    let name = parts
+        .last()
+        .ok_or(ParseError::InvalidLineFormat)?
+        .split(':')
+        .next()
+        .ok_or(ParseError::InvalidLineFormat)?
+        .to_string();
+
     let point = extract_hex(line)?;
 
     Ok(EvalPointLine {
@@ -285,20 +327,19 @@ fn parse_eval_point_line(line: &str) -> Result<EvalPointLine, Box<dyn std::error
 }
 
 // Parses a proof annotation line to indices
-fn line_to_indices(line: &str) -> (usize, usize) {
-    let re = Regex::new(r"P->V\[(\d+):(\d+)\]").unwrap();
-
-    match re.captures(line) {
-        Some(caps) => {
-            let start = caps
-                .get(1)
-                .map_or(0, |m| m.as_str().parse::<usize>().unwrap_or(0));
-            let end = caps
-                .get(2)
-                .map_or(0, |m| m.as_str().parse::<usize>().unwrap_or(0));
-            (start, end)
+fn line_to_indices(line: &str) -> Result<(usize, usize), ParseError> {
+    if !line.starts_with("P->V[") {
+        Ok((0, 0))
+    } else {
+        let indices_part = &line[5..line.find(']').ok_or(ParseError::InvalidLineFormat)?];
+        let indices: Vec<&str> = indices_part.split(':').collect();
+        if indices.len() != 2 {
+            Err(ParseError::InvalidLineFormat)
+        } else {
+            let start = indices[0].parse::<usize>()?;
+            let end = indices[1].parse::<usize>()?;
+            Ok((start, end))
         }
-        None => (0, 0),
     }
 }
 
@@ -307,46 +348,49 @@ pub fn gen_merkle_statement_call(
     merkle_extras: Vec<MerkleLine>,
     merkle_original: Vec<MerkleLine>,
     merkle_commit: CommitmentLine,
-) -> MerkleStatement {
+) -> Result<MerkleStatement, ParseError> {
     let qs: Vec<&str> = merkle_extras.iter().map(|n| &n.name[..]).collect();
     let heights: Vec<usize> = merkle_extras
         .iter()
         .map(|mline| mline.node.bits() - 1)
         .collect();
-    assert!(heights.iter().all(|&h| h == heights[0]));
 
-    let root = U256::from_str_radix(&merkle_commit.digest, 16).expect("Invalid hex number");
+    if !heights.iter().all(|&h| h == heights[0]) {
+        return Err(ParseError::InvalidLineFormat);
+    }
+
+    let root = U256::from_str_radix(&merkle_commit.digest, 16)?;
     let merkle_queue_values: Vec<U256> = merkle_extras
         .iter()
-        .map(|mline| U256::from_str_radix(&mline.digest, 16).expect("Invalid hex number"))
-        .collect();
+        .map(|mline| Ok(U256::from_str_radix(&mline.digest, 16)?))
+        .collect::<Result<Vec<U256>, ParseError>>()?;
     let proof: Vec<U256> = merkle_original
         .iter()
-        .map(|mline| U256::from_str_radix(&mline.digest, 16).expect("Invalid hex number"))
-        .collect();
+        .map(|mline| Ok(U256::from_str_radix(&mline.digest, 16)?))
+        .collect::<Result<Vec<U256>, ParseError>>()?;
     let merkle_queue_indices: Vec<U256> = merkle_extras.iter().map(|mline| mline.node).collect();
 
-    MerkleStatement::new(
+    Ok(MerkleStatement::new(
         root,
         qs.len(),
         heights[0],
         merkle_queue_indices,
         merkle_queue_values,
         proof,
-    )
+    ))
 }
 
-fn montgomery_encode(element: &str) -> U256 {
+fn montgomery_encode(element: &str) -> Result<U256, ParseError> {
     let prime = BigUint::from_str_radix(
         "800000000000011000000000000000000000000000000000000000000000001",
         16,
-    )
-    .expect("Invalid prime number");
-    let num = BigUint::from_str_radix(element, 16).expect("Invalid hex number for element");
+    )?;
+    let num = BigUint::from_str_radix(element, 16)?;
 
     let r = BigUint::one() << 256; // Use 2^256 as R
     let encoded: BigUint = (num * r) % prime; // this seems to lost the purpose of montgomery encoding which aims to avoid division
-    U256::from_str_radix(&encoded.to_str_radix(10), 10).unwrap()
+
+    Ok(U256::from_str_radix(&encoded.to_str_radix(10), 10)?)
 }
 
 fn interleave<T: Clone>(a: Vec<T>, b: Vec<T>, c: Vec<T>) -> Vec<T> {
@@ -365,9 +409,9 @@ pub fn gen_fri_merkle_statement_call(
     merkle_extras: Vec<MerkleLine>,
     merkle_commitment: CommitmentLine,
     evaluation_point: EvalPointLine,
-) -> FRIMerkleStatement {
-    let root = U256::from_str_radix(&merkle_commitment.digest, 16).expect("Invalid hex number");
-    let eval_point = U256::from_str_radix(&evaluation_point.point, 16).expect("Invalid hex number");
+) -> Result<FRIMerkleStatement, ParseError> {
+    let root = U256::from_str_radix(&merkle_commitment.digest, 16)?;
+    let eval_point = U256::from_str_radix(&evaluation_point.point, 16)?;
 
     let heights: Vec<usize> = merkle_extras
         .iter()
@@ -395,44 +439,41 @@ pub fn gen_fri_merkle_statement_call(
         .map(|fline| U256::from(fline.index + (1 << input_height)))
         .collect();
 
-    let output_layer_queries = merkle_extras
-        .iter()
-        .map(|mline| mline.node)
-        .collect::<Vec<_>>();
+    let output_layer_queries: Vec<U256> = merkle_extras.iter().map(|mline| mline.node).collect();
 
-    let input_layer_values = fri_extras
+    let input_layer_values: Vec<U256> = fri_extras
         .values
         .iter()
         .map(|fline| montgomery_encode(&fline.element))
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<U256>, ParseError>>()?;
 
-    let output_layer_values = fri_extras_next
+    let output_layer_values: Vec<U256> = fri_extras_next
         .values
         .iter()
         .map(|fline| montgomery_encode(&fline.element))
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<U256>, ParseError>>()?;
 
-    let input_layer_inverses = fri_extras
+    let input_layer_inverses: Vec<U256> = fri_extras
         .inverses
         .iter()
-        .map(|fline| U256::from_str_radix(&fline.inv, 16).expect("Invalid hex number"))
-        .collect::<Vec<_>>();
+        .map(|fline| Ok(U256::from_str_radix(&fline.inv, 16)?))
+        .collect::<Result<Vec<U256>, ParseError>>()?;
 
-    let output_layer_inverses = fri_extras_next
+    let output_layer_inverses: Vec<U256> = fri_extras_next
         .inverses
         .iter()
-        .map(|fline| U256::from_str_radix(&fline.inv, 16).expect("Invalid hex number"))
-        .collect::<Vec<_>>();
+        .map(|fline| Ok(U256::from_str_radix(&fline.inv, 16)?))
+        .collect::<Result<Vec<U256>, ParseError>>()?;
 
-    let proof = fri_original
+    let proof: Vec<U256> = fri_original
         .iter()
         .map(|fline| montgomery_encode(&fline.element))
         .chain(
             merkle_original
                 .iter()
-                .map(|mline| U256::from_str_radix(&mline.digest, 16).expect("Invalid hex number")),
+                .map(|mline| Ok(U256::from_str_radix(&mline.digest, 16)?)),
         )
-        .collect();
+        .collect::<Result<Vec<U256>, ParseError>>()?;
 
     let input_interleaved = interleave(
         input_layer_queries.clone(),
@@ -445,7 +486,7 @@ pub fn gen_fri_merkle_statement_call(
         output_layer_inverses.clone(),
     );
 
-    FRIMerkleStatement {
+    Ok(FRIMerkleStatement {
         expected_root: root,
         evaluation_point: eval_point,
         fri_step_size: step_size,
@@ -459,12 +500,12 @@ pub fn gen_fri_merkle_statement_call(
         input_interleaved,
         output_interleaved,
         proof,
-    }
+    })
 }
 
 fn parse_fri_merkles_extra(
     extra_annot_lines: Vec<&str>,
-) -> Result<(MerkleExtrasDict, Vec<FriExtras>), Box<dyn Error>> {
+) -> Result<(MerkleExtrasDict, Vec<FriExtras>), ParseError> {
     let mut merkle_extras_dict = MerkleExtrasDict::new();
     let mut fri_extras_dict = HashMap::new();
     let mut fri_names = Vec::new();
@@ -514,7 +555,7 @@ fn parse_fri_merkles_extra(
 pub fn parse_fri_merkles_original(
     orig_proof: Vec<u8>,
     annot_lines: Vec<String>,
-) -> Result<FriMerklesOriginal, Box<dyn Error>> {
+) -> Result<FriMerklesOriginal, ParseError> {
     let mut merkle_original_dict = MerkleExtrasDict::new();
     let mut merkle_commits_dict = HashMap::new();
     let mut fri_original_dict = HashMap::new();
@@ -527,13 +568,10 @@ pub fn parse_fri_merkles_original(
 
     for line in annot_lines {
         if is_commitment_line(&line) {
-            match parse_commitment_line(&line, &mut trace_commitment_counter) {
-                Ok((cline, new_trace_commitment_counter)) => {
-                    merkle_commits_dict.insert(cline.name.clone(), cline);
-                    trace_commitment_counter = new_trace_commitment_counter;
-                }
-                Err(e) => return Err(e),
-            }
+            let (cline, new_trace_commitment_counter) =
+                parse_commitment_line(&line, &mut trace_commitment_counter)?;
+            merkle_commits_dict.insert(cline.name.clone(), cline);
+            trace_commitment_counter = new_trace_commitment_counter;
         } else if is_eval_point_line(&line) {
             let epline = parse_eval_point_line(&line)?;
             eval_points_list.push(epline);
@@ -563,7 +601,7 @@ pub fn parse_fri_merkles_original(
         } else {
             main_annot.push_str(&line);
             main_annot.push('\n');
-            let (start, end) = line_to_indices(&line);
+            let (start, end) = line_to_indices(&line)?;
             main_proof.extend_from_slice(&orig_proof[start..end]);
         }
     }
@@ -584,20 +622,20 @@ fn single_column_merkle_patch(
     merkle_patches: &HashSet<String>,
     merkle_extras_dict: &mut HashMap<String, Vec<MerkleLine>>,
     annot_lines: &[String],
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), ParseError> {
     for name in merkle_patches {
         let merkle_extras = merkle_extras_dict
             .get(name)
-            .ok_or("Name not found in merkle_extras_dict")?
+            .ok_or(ParseError::InvalidLineFormat)?
             .clone();
         let heights: Vec<usize> = merkle_extras
             .iter()
             .map(|mline| mline.node.leading_zeros() as usize - 1)
             .collect();
         // Ensure all heights are the same
-        let height = *heights.first().ok_or("No heights found")?;
+        let height = *heights.first().ok_or(ParseError::InvalidLineFormat)?;
         if !heights.iter().all(|&h| h == height) {
-            return Err(From::from("Mismatched heights"));
+            return Err(ParseError::InvalidLineFormat);
         }
         // When patched, the apparent Merkle height is one lower than the original.
         let height = height + 1;
@@ -609,7 +647,7 @@ fn single_column_merkle_patch(
                 let parsed_fri_line = parse_fri_line(line)?;
                 // let node = parsed_fri_line.row + (1 << height);
                 let node = U256::from(parsed_fri_line.row) + U256::from(1 << height);
-                let element = montgomery_encode(&parsed_fri_line.element);
+                let element = montgomery_encode(&parsed_fri_line.element)?;
                 let element_hex = format!("{:0>64x}", element);
                 let merkle_line = MerkleLine {
                     name: name.clone(),
@@ -619,7 +657,7 @@ fn single_column_merkle_patch(
                 };
                 merkle_extras_dict
                     .get_mut(name)
-                    .ok_or("Name not found in merkle_extras_dict")?
+                    .ok_or(ParseError::InvalidLineFormat)?
                     .push(merkle_line);
             }
         }
@@ -655,9 +693,7 @@ fn single_column_merkle_patch(
 //     Ok((orig_proof, annot_lines, extra_annot_lines))
 // }
 
-pub fn split_fri_merkle_statements(
-    proof_json: AnnotatedProof,
-) -> Result<SplitProofs, Box<dyn std::error::Error>> {
+pub fn split_fri_merkle_statements(proof_json: AnnotatedProof) -> Result<SplitProofs, ParseError> {
     // Slice starting from the third character
     let sliced_proof_hex = &proof_json.proof_hex[2..];
 
@@ -692,7 +728,8 @@ pub fn split_fri_merkle_statements(
                 merkle_extras_dict[&name].clone(),
                 fri_merkles_original.merkle_originals[&name].clone(),
                 fri_merkles_original.merkle_commitments[&name].clone(),
-            );
+            )
+            .unwrap();
             (name, statement)
         })
         .collect::<HashMap<_, _>>();
@@ -712,7 +749,7 @@ pub fn split_fri_merkle_statements(
                 fri_merkles_original.eval_points[i].clone(),
             )
         })
-        .collect();
+        .collect::<Result<Vec<FRIMerkleStatement>, ParseError>>()?;
 
     let mut main_proof = fri_merkles_original.original_proof;
 
