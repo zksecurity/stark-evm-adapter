@@ -38,7 +38,7 @@ where
     let mut seq = serializer.serialize_seq(Some(vec.len()))?;
     for element in vec {
         // Use the previously defined serialize_u256_as_number for each element
-        seq.serialize_element(&SerializeU256AsNumber(element.clone()))?;
+        seq.serialize_element(&SerializeU256AsNumber(*element))?;
     }
     seq.end()
 }
@@ -61,7 +61,7 @@ where
 // Wrapper type to use the serialize_u256_as_number function
 pub struct SerializeU256AsNumber(U256);
 
-impl<'a> Serialize for SerializeU256AsNumber {
+impl Serialize for SerializeU256AsNumber {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
