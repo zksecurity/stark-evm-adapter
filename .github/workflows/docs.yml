@@ -3,7 +3,7 @@ name: Deploy Docs to GitHub Pages
 on:
   push:
     branches:
-      - master
+      - main
 
 env:
   RUST_TOOLCHAIN_VERSION: "nightly"
