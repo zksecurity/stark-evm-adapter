@@ -581,14 +581,14 @@ pub fn parse_fri_merkles_original(
             let mline = parse_merkle_line(&line)?;
             merkle_original_dict
                 .entry(mline.name.clone())
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(mline);
         } else if is_merkle_data_line(&line) {
             let mline = parse_merkle_data_line(&line)?;
             let cloned_mline_name = mline.name.clone();
             merkle_original_dict
                 .entry(mline.name.clone())
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(mline);
             merkle_patches.insert(cloned_mline_name);
         } else if is_fri_line(&line) {
