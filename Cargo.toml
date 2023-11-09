@@ -2,8 +2,9 @@
 name = "stark_evm_adapter"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+authors = ["zksecurity <hi@zksecurity.xyz>"]
+description = "a lib/CLI for verifying STARK proofs on EVM (Ethereum Virtual Machine)"
+license = "MIT"
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
