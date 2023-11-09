@@ -27,3 +27,35 @@ let annotated_proof: AnnotatedProof = serde_json::from_reader(reader).unwrap();
 let split_proofs = split_fri_merkle_statements(annotated_proof).unwrap();
 println!("{}", serde_json::to_string_pretty(&split_proofs).unwrap());
 ```
+
+## CLI demo
+### Installation
+```bash
+cargo install stark-evm-adapter
+```
+
+### Usage
+```bash
+stark-evm-adapter --help
+```
+
+To generate an annotated proof based on the outputs of the stone-prover:
+```bash
+stark-evm-adapter gen-annotated-proof \
+    --stone-proof-file tests/fixtures/stone_proof.json \
+    --stone-annotation-file tests/fixtures/stone_proof_annotation.txt \
+    --stone-extra-annotation-file tests/fixtures/stone_proof_annotation_extra.txt \
+    --output annotated_proof.json
+```
+
+The annotated proof originates from 3 file outputs of the [stone-prover](https://github.com/starkware-libs/stone-prover/tree/00b274b55c82077184be4c0758f7bed18950eaba#creating-and-verifying-a-proof-of-a-cairozero-program). 
+
+
+_stone_proof.json_ comes from the _cpu_air_prover_ command, while the annotation files come from the _cpu_air_verifier_ command with arguments _annotation_file_ and _extra_output_file_.
+
+Once the _annotated_proof.json_ is generated, this command will transform it to split proofs which then can be used to submit to L1 EVM verifiers:
+```bash
+stark-evm-adapter split-proof \
+    --annotated-proof-file ./annotated_proof.json \
+    --output split_proofs.json
+```
