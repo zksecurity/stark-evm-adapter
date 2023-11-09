@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["gen_fri_merkle_statement_call","gen_merkle_statement_call","parse_fri_merkles_original","split_fri_merkle_statements"],"struct":["AnnotatedProof","CommitmentLine","EvalPointLine","FriExtras","FriLine","FriMerklesOriginal","FriXInvLine","MerkleLine","SplitProofs"],"type":["MerkleExtrasDict"]};
