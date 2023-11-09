@@ -101,14 +101,16 @@ fn main() {
 
             // load extra annotation file and save the lines as an array property (extra_annotations) in the proof json file
             let extra_annotation_reader = std::fs::File::open(extra_annotation_filepath).unwrap();
-            let extra_annotation_lines: Vec<String> = std::io::BufReader::new(extra_annotation_reader)
-                .lines()
-                .map(|line| line.unwrap())
-                .collect();
+            let extra_annotation_lines: Vec<String> =
+                std::io::BufReader::new(extra_annotation_reader)
+                    .lines()
+                    .map(|line| line.unwrap())
+                    .collect();
             proof_with_annotations["extra_annotations"] = serde_json::json!(extra_annotation_lines);
 
             // format json and write to file
-            let proof_with_annotations_json = serde_json::to_string_pretty(&proof_with_annotations).unwrap();
+            let proof_with_annotations_json =
+                serde_json::to_string_pretty(&proof_with_annotations).unwrap();
             std::fs::write(output_filepath, proof_with_annotations_json).unwrap();
 
             println!("annotated proof wrote to {}", output_filepath);
