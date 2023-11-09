@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["split_fri_merkle_statements"],"struct":["AnnotatedProof","SplitProofs"]};

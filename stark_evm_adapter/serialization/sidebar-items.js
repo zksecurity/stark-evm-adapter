@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["deserialize_u256_as_number","deserialize_vec_u256_as_number","serialize_u256_as_number","serialize_vec_u256_as_number"],"struct":["SerializeU256AsNumber"]};
