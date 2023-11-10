@@ -31,7 +31,7 @@ println!("{}", serde_json::to_string_pretty(&split_proofs).unwrap());
 ## CLI demo
 ### Installation
 ```bash
-cargo install stark-evm-adapter
+cargo install stark_evm_adapter
 ```
 
 ### Usage
