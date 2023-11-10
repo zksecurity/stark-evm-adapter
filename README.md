@@ -17,6 +17,7 @@ stark-evm-adapter = "0.1.3"
 
 ```rust
 use stark_evm_adapter::annotation_parser::AnnotatedProof;
+use stark_evm_adapter::annotation_parser::split_fri_merkle_statements;
 
 // read an annotated proof
 let file = std::fs::File::open("tests/fixtures/annotated_proof.json").unwrap();
