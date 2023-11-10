@@ -10,7 +10,7 @@ Specifically, the library can be used to generate a "split proof", which is nece
 
 ```toml
 [dependencies]
-stark-evm-adapter = "0.1.0"
+stark-evm-adapter = "0.1.3"
 ```
 
 ## Example
