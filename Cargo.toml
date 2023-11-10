@@ -4,6 +4,7 @@ version = "0.1.1"
 edition = "2021"
 authors = ["zksecurity <hello@zksecurity.xyz>"]
 description = "a lib/CLI for adapting STARK proofs for verification on the EVM"
+repository = "https://github.com/zksecurity/stark-evm-adapter"
 license = "MIT"
 
 [dependencies]
