@@ -774,8 +774,6 @@
 <a href="#774" id="774">774</a>
 <a href="#775" id="775">775</a>
 <a href="#776" id="776">776</a>
-<a href="#777" id="777">777</a>
-<a href="#778" id="778">778</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>ethers::abi::Token;
 <span class="kw">use </span>ethers::utils::keccak256;
 <span class="kw">use </span>ethers::{types::U256, utils::hex};
@@ -1370,7 +1368,6 @@
 
     <span class="kw">for </span>line <span class="kw">in </span>annot_lines {
         <span class="kw">if </span>is_commitment_line(<span class="kw-2">&amp;</span>line) {
-
             <span class="kw">let </span>(cline, new_trace_commitment_counter) =
                 parse_commitment_line(<span class="kw-2">&amp;</span>line, <span class="kw-2">&amp;mut </span>trace_commitment_counter)<span class="question-mark">?</span>;
             merkle_commits_dict.insert(cline.name.clone(), cline);
@@ -1448,7 +1445,6 @@
 
         <span class="kw">for </span>line <span class="kw">in </span>annot_lines {
             <span class="kw">if </span>line.contains(name) &amp;&amp; line.contains(<span class="string">&quot;Column 0&quot;</span>) &amp;&amp; line.contains(<span class="string">&quot;Field Element&quot;</span>) {
-
                 <span class="comment">// It is not a Fri line, but the structure is similar enough for the parser.
                 </span><span class="kw">let </span>parsed_fri_line = parse_fri_line(line)<span class="question-mark">?</span>;
                 <span class="kw">let </span>node = U256::from(parsed_fri_line.row) + U256::from(<span class="number">1 </span>&lt;&lt; height);
