@@ -36,12 +36,12 @@ cargo install stark_evm_adapter
 
 ### Usage
 ```bash
-stark-evm-adapter --help
+stark_evm_adapter --help
 ```
 
 To generate an annotated proof based on the outputs of the stone-prover:
 ```bash
-stark-evm-adapter gen-annotated-proof \
+stark_evm_adapter gen-annotated-proof \
     --stone-proof-file tests/fixtures/stone_proof.json \
     --stone-annotation-file tests/fixtures/stone_proof_annotation.txt \
     --stone-extra-annotation-file tests/fixtures/stone_proof_annotation_extra.txt \
@@ -55,7 +55,7 @@ _stone_proof.json_ comes from the _cpu_air_prover_ command, while the annotation
 
 Once the _annotated_proof.json_ is generated, this command will transform it to split proofs which then can be used to submit to L1 EVM verifiers:
 ```bash
-stark-evm-adapter split-proof \
+stark_evm_adapter split-proof \
     --annotated-proof-file ./annotated_proof.json \
     --output split_proofs.json
 ```
