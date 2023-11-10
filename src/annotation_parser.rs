@@ -532,14 +532,12 @@ fn parse_fri_merkles_extra(
 
     for line in extra_annot_lines {
         if is_merkle_line(line) {
-            println!("fri merkle extra: is merkle line: {}", line);
             let mline = parse_merkle_line(line)?;
             merkle_extras_dict
                 .entry(mline.name.clone())
                 .or_default()
                 .push(mline);
         } else if is_fri_line(line) {
-            println!("fri merkle extra: is fri line: {}", line);
             let fline = parse_fri_line(line)?;
             if !fri_extras_dict.contains_key(&fline.name) {
                 fri_extras_dict.insert(
@@ -557,7 +555,6 @@ fn parse_fri_merkles_extra(
                 .values
                 .push(fline);
         } else if is_fri_xinv_line(line) {
-            println!("fri merkle extra: is fri xinv line: {}", line);
             let fxline = parse_fri_xinv_line(line)?;
             fri_extras_dict
                 .get_mut(&fxline.name)
@@ -595,27 +592,23 @@ fn parse_fri_merkles_original(
 
     for line in annot_lines {
         if is_commitment_line(&line) {
-            println!("fri merkles original: is commitment line: {}", line);
 
             let (cline, new_trace_commitment_counter) =
                 parse_commitment_line(&line, &mut trace_commitment_counter)?;
             merkle_commits_dict.insert(cline.name.clone(), cline);
             trace_commitment_counter = new_trace_commitment_counter;
         } else if is_eval_point_line(&line) {
-            println!("fri merkles original: is eval point line: {}", line);
             let epline = parse_eval_point_line(&line)?;
             eval_points_list.push(epline);
         }
 
         if is_merkle_line(&line) {
-            println!("fri merkles original: is merkle line: {}", line);
             let mline = parse_merkle_line(&line)?;
             merkle_original_dict
                 .entry(mline.name.clone())
                 .or_default()
                 .push(mline);
         } else if is_merkle_data_line(&line) {
-            println!("fri merkles original: is merkle data line: {}", line);
             let mline = parse_merkle_data_line(&line)?;
             let cloned_mline_name = mline.name.clone();
             merkle_original_dict
@@ -624,7 +617,6 @@ fn parse_fri_merkles_original(
                 .push(mline);
             merkle_patches.insert(cloned_mline_name);
         } else if is_fri_line(&line) {
-            println!("fri merkles original: is fri line: {}", line);
             let fline = parse_fri_line(&line)?;
             if !fri_original_dict.contains_key(&fline.name) {
                 fri_original_dict.insert(fline.name.clone(), Vec::new());
@@ -632,7 +624,6 @@ fn parse_fri_merkles_original(
             }
             fri_original_dict.get_mut(&fline.name).unwrap().push(fline);
         } else {
-            println!("fri merkles original: main annotation line: {}", line);
             main_annot.push_str(&line);
             main_annot.push('\n');
             let (start, end) = line_to_indices(&line)?;
@@ -679,7 +670,6 @@ fn single_column_merkle_patch(
 
         for line in annot_lines {
             if line.contains(name) && line.contains("Column 0") && line.contains("Field Element") {
-                println!("single column merkle patch: {}", line);
 
                 // It is not a Fri line, but the structure is similar enough for the parser.
                 let parsed_fri_line = parse_fri_line(line)?;
