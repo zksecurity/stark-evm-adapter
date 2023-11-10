@@ -6,7 +6,7 @@ use stark_evm_adapter::annotation_parser::{split_fri_merkle_statements, Annotate
 fn main() {
     let matches = Command::new("stark-evm-adapter")
         .version("0.1.0")
-        .author("zksecurity <hi@zksecurity.xyz>")
+        .author("zksecurity <hello@zksecurity.xyz>")
         .about("EVM adapter for the STARK stone-prover")
         .subcommand(
             Command::new("split-proof")
