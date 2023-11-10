@@ -592,7 +592,6 @@ fn parse_fri_merkles_original(
 
     for line in annot_lines {
         if is_commitment_line(&line) {
-
             let (cline, new_trace_commitment_counter) =
                 parse_commitment_line(&line, &mut trace_commitment_counter)?;
             merkle_commits_dict.insert(cline.name.clone(), cline);
@@ -670,7 +669,6 @@ fn single_column_merkle_patch(
 
         for line in annot_lines {
             if line.contains(name) && line.contains("Column 0") && line.contains("Field Element") {
-
                 // It is not a Fri line, but the structure is similar enough for the parser.
                 let parsed_fri_line = parse_fri_line(line)?;
                 let node = U256::from(parsed_fri_line.row) + U256::from(1 << height);
