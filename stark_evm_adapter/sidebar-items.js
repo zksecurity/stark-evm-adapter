@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["main"]};
+window.SIDEBAR_ITEMS = {"mod":["annotation_parser","errors","fri_merkle_statement","merkle_statement","serialization"]};
