@@ -9,8 +9,8 @@ use serde_with::serde_as;
 use std::collections::{HashMap, HashSet};
 
 use crate::errors::ParseError;
-use crate::fri_merkle_statement::FRIMerkleStatement;
-use crate::merkle_statement::MerkleStatement;
+use crate::fri_merkle_statement::{FRIMerkleStatement, FRIMerkleStatementContractArgs};
+use crate::merkle_statement::{MerkleStatement, MerkleStatementContractArgs};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 /// [AnnotatedProof] maps annotated proof json file which contains the original proof
@@ -84,8 +84,8 @@ struct FriMerklesOriginal {
 pub struct SplitProofs {
     #[serde_as(as = "serde_with::hex::Hex")]
     pub main_proof: Vec<u8>,
-    pub merkle_statements: HashMap<String, MerkleStatement>,
-    pub fri_merkle_statements: Vec<FRIMerkleStatement>,
+    pub merkle_statements: HashMap<String, MerkleStatementContractArgs>,
+    pub fri_merkle_statements: Vec<FRIMerkleStatementContractArgs>,
 }
 
 // Parses hex strings and pads with zeros to make it 64 characters long
@@ -767,6 +767,17 @@ pub fn split_fri_merkle_statements(proof_json: AnnotatedProof) -> Result<SplitPr
         }
         main_proof
     };
+
+    // convert merkle_statements to contract args
+    let merkle_statements = merkle_statements
+        .into_iter()
+        .map(|(name, statement)| (name, MerkleStatementContractArgs::from(statement)))
+        .collect::<HashMap<_, _>>();
+
+    let fri_merkle_statements = fri_merkle_statements
+        .into_iter()
+        .map(FRIMerkleStatementContractArgs::from)
+        .collect::<Vec<_>>();
 
     Ok(SplitProofs {
         main_proof,
