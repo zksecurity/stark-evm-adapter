@@ -11,6 +11,7 @@ use std::collections::{HashMap, HashSet};
 use crate::errors::ParseError;
 use crate::fri_merkle_statement::{FRIMerkleStatement, FRIMerkleStatementContractArgs};
 use crate::merkle_statement::{MerkleStatement, MerkleStatementContractArgs};
+use crate::serialization::{deserialize_vec_u256_as_number, serialize_vec_u256_as_number};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 /// [AnnotatedProof] maps annotated proof json file which contains the original proof
@@ -82,8 +83,11 @@ struct FriMerklesOriginal {
 #[derive(Serialize, Deserialize, Debug)]
 /// [SplitProofs] maps the split proof json file which contains the main proof and the merkle statements
 pub struct SplitProofs {
-    #[serde_as(as = "serde_with::hex::Hex")]
-    pub main_proof: Vec<u8>,
+    #[serde(
+        serialize_with = "serialize_vec_u256_as_number",
+        deserialize_with = "deserialize_vec_u256_as_number"
+    )]
+    pub main_proof: Vec<U256>,
     pub merkle_statements: HashMap<String, MerkleStatementContractArgs>,
     pub fri_merkle_statements: Vec<FRIMerkleStatementContractArgs>,
 }
@@ -768,12 +772,15 @@ pub fn split_fri_merkle_statements(proof_json: AnnotatedProof) -> Result<SplitPr
         main_proof
     };
 
+    let main_proof = proof_hex2int_list(main_proof);
+
     // convert merkle_statements to contract args
     let merkle_statements = merkle_statements
         .into_iter()
         .map(|(name, statement)| (name, MerkleStatementContractArgs::from(statement)))
         .collect::<HashMap<_, _>>();
 
+    // convert fri_merkle_statements to contract args
     let fri_merkle_statements = fri_merkle_statements
         .into_iter()
         .map(FRIMerkleStatementContractArgs::from)
@@ -784,4 +791,26 @@ pub fn split_fri_merkle_statements(proof_json: AnnotatedProof) -> Result<SplitPr
         merkle_statements,
         fri_merkle_statements,
     })
+}
+
+/// Gets a vec of u8 ints and returns it as a 256bits padded list of integer.
+/// This conversion is what's needed in order to send a binary proof
+/// into an EVM deployed verifier.
+fn proof_hex2int_list(proof: Vec<u8>) -> Vec<U256> {
+    let chunk_size = 32; // U256 is 32 bytes (256 bits)
+    let mut padded_proof = proof;
+
+    // Pad the vector with zeros until its length is a multiple of chunk_size
+    while padded_proof.len() % chunk_size != 0 {
+        padded_proof.push(0);
+    }
+
+    padded_proof
+        .chunks(chunk_size)
+        .map(|chunk| {
+            let mut array = [0u8; 32];
+            array.copy_from_slice(chunk);
+            U256::from_big_endian(&array)
+        })
+        .collect()
 }
