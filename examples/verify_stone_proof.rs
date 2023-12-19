@@ -6,7 +6,6 @@ use ethers::{
     types::{Address, U256, U64},
     utils::{hex, Anvil},
 };
-use eyre::Result;
 use stark_evm_adapter::{
     annotated_proof::AnnotatedProof,
     annotation_parser::{split_fri_merkle_statements, SplitProofs},
@@ -15,7 +14,7 @@ use stark_evm_adapter::{
 use std::{convert::TryFrom, env, str::FromStr, sync::Arc};
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // setup a local mainnet fork
     let url = env::var("MAINNET_RPC");
     let forked_url = env::var("FORKED_MAINNET_RPC");
@@ -101,7 +100,10 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn assert_call(call: ContractFunctionCall, name: &str) -> Result<(), eyre::Error> {
+async fn assert_call(
+    call: ContractFunctionCall,
+    name: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
     let pending_tx = call.send().await?;
     let mined_tx = pending_tx.await?;
     assert_eq!(

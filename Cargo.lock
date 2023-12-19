@@ -2979,7 +2979,6 @@ dependencies = [
  "assert-json-diff",
  "clap",
  "ethers",
- "eyre",
  "num-bigint",
  "num-traits",
  "regex",
