@@ -1,7 +1,9 @@
 use std::io::BufRead;
 
 use clap::{Arg, Command};
-use stark_evm_adapter::annotation_parser::{split_fri_merkle_statements, AnnotatedProof};
+// use stark_evm_adapter::{
+//     annotated_proof::AnnotatedProof, annotation_parser::split_fri_merkle_statements,
+// };
 
 fn main() {
     let matches = Command::new("stark-evm-adapter")
@@ -61,25 +63,25 @@ fn main() {
         .get_matches();
 
     match matches.subcommand() {
-        Some(("split-proof", sub_matches)) => {
-            let annotated_proof_filepath = sub_matches.value_of("annotated-proof-file").unwrap();
-            let output_filepath = sub_matches.value_of("output").unwrap();
+        // Some(("split-proof", sub_matches)) => {
+        //     let annotated_proof_filepath = sub_matches.value_of("annotated-proof-file").unwrap();
+        //     let output_filepath = sub_matches.value_of("output").unwrap();
 
-            // load annotated proof from file
-            let reader = std::fs::File::open(annotated_proof_filepath).unwrap();
+        //     // load annotated proof from file
+        //     let reader = std::fs::File::open(annotated_proof_filepath).unwrap();
 
-            // parse as annotated proof
-            let annotated_proof: AnnotatedProof = serde_json::from_reader(reader).unwrap();
+        //     // parse as annotated proof
+        //     let annotated_proof: AnnotatedProof = serde_json::from_reader(reader).unwrap();
 
-            // create the split proofs
-            let split_proofs = split_fri_merkle_statements(annotated_proof).unwrap();
+        //     // create the split proofs
+        //     let split_proofs = split_fri_merkle_statements(annotated_proof).unwrap();
 
-            // format json and write to file
-            let split_proof_json = serde_json::to_string_pretty(&split_proofs).unwrap();
-            std::fs::write(output_filepath, split_proof_json).unwrap();
+        //     // format json and write to file
+        //     let split_proof_json = serde_json::to_string_pretty(&split_proofs).unwrap();
+        //     std::fs::write(output_filepath, split_proof_json).unwrap();
 
-            println!("split proof wrote to {}", output_filepath);
-        }
+        //     println!("split proof wrote to {}", output_filepath);
+        // }
         Some(("gen-annotated-proof", sub_matches)) => {
             let proof_filepath = sub_matches.value_of("proof-file").unwrap();
             let annotation_filepath = sub_matches.value_of("annotation-file").unwrap();

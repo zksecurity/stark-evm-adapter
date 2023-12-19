@@ -29,6 +29,8 @@ let split_proofs = split_fri_merkle_statements(annotated_proof).unwrap();
 println!("{}", serde_json::to_string_pretty(&split_proofs).unwrap());
 ```
 
+For how to submit the split proofs to the L1 EVM verifier, please refer to the [example demo](https://github.com/zksecurity/stark-evm-adapter/blob/8af44a0aa61c89e36a08261320f234709e99ed71/examples/verify_stone_proof.rs#L18).
+
 ## CLI demo
 ### Installation
 ```bash
