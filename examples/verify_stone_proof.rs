@@ -17,10 +17,27 @@ use std::{convert::TryFrom, env, str::FromStr, sync::Arc};
 #[tokio::main]
 async fn main() -> Result<()> {
     // setup a local mainnet fork
-    let url = env::var("FORKED_MAINNET_RPC").expect("FORKED_MAINNET_RPC must be set in env. You can get a forked mainnet RPC url from https://infura.io/");
-    let anvil = Anvil::new().fork(url).spawn();
-    let endpoint = anvil.endpoint();
-    let provider = Provider::<Http>::try_from(endpoint.as_str())?;
+    let url = env::var("MAINNET_RPC");
+    let forked_url = env::var("FORKED_MAINNET_RPC");
+    // check either env MAINNET_RPC or FORK_MAINNET_RPC is set
+    if url.is_err() && forked_url.is_err() {
+        panic!("Either MAINNET_RPC or FORK_MAINNET_RPC must be set in env. \
+        You can get a mainnet RPC url from https://infura.io/, \
+        or forked mainnet RPC url from https://tenderly.co/");
+    }
+
+    // a trick to make anvil process lives in the whole main function
+    let mut anvil = None;
+
+    let provider: Provider<Http> = if forked_url.is_ok() {
+        Provider::try_from(forked_url.unwrap().as_str())?
+    } else {
+        let url = url.unwrap();
+        println!("Forking from {}", url);
+        anvil = Some(Anvil::new().fork(url).spawn());
+        let endpoint = anvil.as_ref().unwrap().endpoint();
+        Provider::<Http>::try_from(endpoint.as_str())?
+    };
 
     // test private key from anvil node
     let from_key_bytes =
@@ -28,6 +45,7 @@ async fn main() -> Result<()> {
 
     let from_signing_key = SigningKey::from_bytes(from_key_bytes.as_slice().into()).unwrap();
     let from_wallet: LocalWallet = LocalWallet::from(from_signing_key);
+    println!("Test wallet address: {:?}", from_wallet.address());
 
     let chain_id = provider.get_chainid().await?.as_u32();
     let signer: Arc<SignerMiddleware<_, _>> = Arc::new(SignerMiddleware::new(
@@ -52,9 +70,7 @@ async fn main() -> Result<()> {
         let key = format!("Trace {}", i);
         let trace_merkle = split_proofs.merkle_statements.get(&key).unwrap();
 
-        let call = trace_merkle
-            .verify(contract_address, signer.clone())
-            .gas(U256::from(21000000i64));
+        let call = trace_merkle.verify(contract_address, signer.clone());
 
         assert_call(call, &key).await?;
     }
