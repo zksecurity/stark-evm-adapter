@@ -21,23 +21,28 @@ async fn main() -> Result<()> {
     let forked_url = env::var("FORKED_MAINNET_RPC");
     // check either env MAINNET_RPC or FORK_MAINNET_RPC is set
     if url.is_err() && forked_url.is_err() {
-        panic!("Either MAINNET_RPC or FORK_MAINNET_RPC must be set in env. \
+        panic!(
+            "Either MAINNET_RPC or FORK_MAINNET_RPC must be set in env. \
         You can get a mainnet RPC url from https://infura.io/, \
-        or forked mainnet RPC url from https://tenderly.co/");
+        or forked mainnet RPC url from https://tenderly.co/"
+        );
     }
 
-    // a trick to make anvil process lives in the whole main function
     let mut anvil = None;
 
     let provider: Provider<Http> = if forked_url.is_ok() {
         Provider::try_from(forked_url.unwrap().as_str())?
     } else {
         let url = url.unwrap();
-        println!("Forking from {}", url);
         anvil = Some(Anvil::new().fork(url).spawn());
         let endpoint = anvil.as_ref().unwrap().endpoint();
         Provider::<Http>::try_from(endpoint.as_str())?
     };
+
+    // a trick to make anvil process lives in the whole main function
+    if anvil.is_some() {
+        println!("Anvil is running.");
+    }
 
     // test private key from anvil node
     let from_key_bytes =
