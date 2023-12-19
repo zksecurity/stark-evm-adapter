@@ -16,7 +16,7 @@ stark-evm-adapter = "0.1.3"
 ## Example
 
 ```rust
-use stark_evm_adapter::annotation_parser::AnnotatedProof;
+use stark_evm_adapter::annotated_proof::AnnotatedProof;
 use stark_evm_adapter::annotation_parser::split_fri_merkle_statements;
 
 // read an annotated proof
