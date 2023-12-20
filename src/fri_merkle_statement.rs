@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::ContractFunctionCall;
 
+/// Decommitment for a FRI layer merkle statement
 #[derive(Serialize, Deserialize, Debug)]
 pub struct FRIMerkleStatement {
     pub expected_root: U256,

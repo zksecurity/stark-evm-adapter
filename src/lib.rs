@@ -19,12 +19,16 @@ pub mod merkle_statement;
 pub mod oods_statement;
 pub mod serialization;
 
+/// Default prime field for cairo. This prime will be used when modular operations are needed.
 pub fn default_prime() -> U256 {
     U256::from(2).pow(U256::from(251))
         + U256::from(17) * U256::from(2).pow(U256::from(192))
         + U256::from(1)
 }
 
-pub type SignerMiddlewareType = SignerMiddleware<Provider<Http>, Wallet<SigningKey>>;
-pub type ArcSignerMiddleware = Arc<SignerMiddlewareType>;
-pub type ContractFunctionCall = FunctionCall<ArcSignerMiddleware, SignerMiddlewareType, ()>;
+/// A type alias for ethers contract function call.
+pub type ContractFunctionCall = FunctionCall<
+    Arc<SignerMiddleware<Provider<Http>, Wallet<SigningKey>>>,
+    SignerMiddleware<Provider<Http>, Wallet<SigningKey>>,
+    (),
+>;

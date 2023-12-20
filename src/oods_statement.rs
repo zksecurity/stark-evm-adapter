@@ -19,6 +19,7 @@ use crate::{
     default_prime, ContractFunctionCall,
 };
 
+/// Proof for consistency check for out of domain sampling
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MainProof {
     pub proof: Vec<U256>,

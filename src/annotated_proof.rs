@@ -36,6 +36,7 @@ pub struct FriParameters {
     pub proof_of_work_bits: u32,
 }
 
+/// Public input for a cairo execution
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PublicInput {
     pub layout: String,
@@ -46,12 +47,14 @@ pub struct PublicInput {
     pub rc_min: u32,
 }
 
+/// Memory segments for cairo builtins
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MemorySegment {
     pub begin_addr: u32,
     pub stop_ptr: u32,
 }
 
+/// Public memory for a cairo execution
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PublicMemory {
     pub address: u32,
