@@ -2974,7 +2974,7 @@ dependencies = [
 
 [[package]]
 name = "stark_evm_adapter"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "assert-json-diff",
  "clap",

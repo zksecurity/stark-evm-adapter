@@ -17,7 +17,6 @@ pub mod errors;
 pub mod fri_merkle_statement;
 pub mod merkle_statement;
 pub mod oods_statement;
-pub mod serialization;
 
 /// Default prime field for cairo. This prime will be used when modular operations are needed.
 pub fn default_prime() -> U256 {

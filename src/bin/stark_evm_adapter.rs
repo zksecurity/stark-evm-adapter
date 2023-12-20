@@ -6,28 +6,28 @@ use clap::{Arg, Command};
 // };
 
 fn main() {
-    let matches = Command::new("stark-evm-adapter")
+    let matches = Command::new("stark_evm_adapter")
         .version("0.1.0")
         .author("zksecurity <hello@zksecurity.xyz>")
         .about("EVM adapter for the STARK stone-prover")
-        .subcommand(
-            Command::new("split-proof")
-                .about("Split an annotated proof into multiple FRI proofs")
-                .arg(
-                    Arg::new("annotated-proof-file")
-                        .help("File path for annotated proof json file")
-                        .long("annotated-proof-file")
-                        .takes_value(true)
-                        .required(true),
-                )
-                .arg(
-                    Arg::new("output")
-                        .help("File path for generated split proofs json file")
-                        .long("output")
-                        .takes_value(true)
-                        .required(true),
-                ),
-        )
+        // .subcommand(
+        //     Command::new("split-proof")
+        //         .about("Split an annotated proof into multiple FRI proofs")
+        //         .arg(
+        //             Arg::new("annotated-proof-file")
+        //                 .help("File path for annotated proof json file")
+        //                 .long("annotated-proof-file")
+        //                 .takes_value(true)
+        //                 .required(true),
+        //         )
+        //         .arg(
+        //             Arg::new("output")
+        //                 .help("File path for generated split proofs json file")
+        //                 .long("output")
+        //                 .takes_value(true)
+        //                 .required(true),
+        //         ),
+        // )
         .subcommand(
             Command::new("gen-annotated-proof")
                 .about("Merge stone proof and annotations into a single annotated proof json file")
