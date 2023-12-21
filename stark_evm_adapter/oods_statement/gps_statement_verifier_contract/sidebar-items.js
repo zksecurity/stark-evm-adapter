@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"static":["GPSSTATEMENTVERIFIERCONTRACT_ABI"],"struct":["GpsStatementVerifierContract","VerifyProofAndRegisterCall"]};

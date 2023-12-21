@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["annotation_parser","errors","fri_merkle_statement","merkle_statement","serialization"]};
+window.SIDEBAR_ITEMS = {"fn":["default_prime"],"mod":["annotated_proof","annotation_parser","errors","fri_merkle_statement","merkle_statement","oods_statement"],"type":["ContractFunctionCall"]};

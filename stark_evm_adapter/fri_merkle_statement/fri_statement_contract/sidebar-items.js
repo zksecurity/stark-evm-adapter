@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"static":["FRISTATEMENTCONTRACT_ABI"],"struct":["FriStatementContract","VerifyFRICall"]};

@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/annotation_parser.rs`."><title>annotation_parser.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="stark_evm_adapter" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0-nightly (49b3924bd 2023-11-27)" data-channel="nightly" data-search-js="search-56a624991a76cfad.js" data-settings-js="settings-fe03fdc259827cd2.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-77dede896d6ac08e.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/annotation_parser.rs`."><title>annotation_parser.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-804b98a1284a310a.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="stark_evm_adapter" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0-nightly (5ac4c8a63 2023-12-20)" data-channel="nightly" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -797,23 +798,6 @@
 <a href="#797" id="797">797</a>
 <a href="#798" id="798">798</a>
 <a href="#799" id="799">799</a>
-<a href="#800" id="800">800</a>
-<a href="#801" id="801">801</a>
-<a href="#802" id="802">802</a>
-<a href="#803" id="803">803</a>
-<a href="#804" id="804">804</a>
-<a href="#805" id="805">805</a>
-<a href="#806" id="806">806</a>
-<a href="#807" id="807">807</a>
-<a href="#808" id="808">808</a>
-<a href="#809" id="809">809</a>
-<a href="#810" id="810">810</a>
-<a href="#811" id="811">811</a>
-<a href="#812" id="812">812</a>
-<a href="#813" id="813">813</a>
-<a href="#814" id="814">814</a>
-<a href="#815" id="815">815</a>
-<a href="#816" id="816">816</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>ethers::abi::Token;
 <span class="kw">use </span>ethers::utils::keccak256;
 <span class="kw">use </span>ethers::{types::U256, utils::hex};
@@ -821,22 +805,13 @@
 <span class="kw">use </span>num_traits::{Num, One};
 <span class="kw">use </span>regex::Regex;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
-<span class="kw">use </span>serde_with::serde_as;
 <span class="kw">use </span>std::collections::{HashMap, HashSet};
 
+<span class="kw">use </span><span class="kw">crate</span>::annotated_proof::AnnotatedProof;
 <span class="kw">use </span><span class="kw">crate</span>::errors::ParseError;
-<span class="kw">use </span><span class="kw">crate</span>::fri_merkle_statement::{FRIMerkleStatement, FRIMerkleStatementContractArgs};
-<span class="kw">use </span><span class="kw">crate</span>::merkle_statement::{MerkleStatement, MerkleStatementContractArgs};
-<span class="kw">use </span><span class="kw">crate</span>::serialization::{deserialize_vec_u256_as_number, serialize_vec_u256_as_number};
-
-<span class="attr">#[derive(Serialize, Deserialize, Debug, Clone)]
-</span><span class="doccomment">/// [AnnotatedProof] maps annotated proof json file which contains the original proof
-/// and the annotations generated by verifier of stone-prover
-</span><span class="kw">pub struct </span>AnnotatedProof {
-    <span class="kw">pub </span>proof_hex: String,
-    <span class="kw">pub </span>annotations: Vec&lt;String&gt;,
-    <span class="kw">pub </span>extra_annotations: Vec&lt;String&gt;,
-}
+<span class="kw">use </span><span class="kw">crate</span>::fri_merkle_statement::FRIMerkleStatement;
+<span class="kw">use </span><span class="kw">crate</span>::merkle_statement::MerkleStatement;
+<span class="kw">use </span><span class="kw">crate</span>::oods_statement::MainProof;
 
 <span class="attr">#[derive(Serialize, Deserialize, Debug, Clone)]
 </span><span class="kw">struct </span>MerkleLine {
@@ -895,51 +870,46 @@
     <span class="kw">pub </span>merkle_patches: HashSet&lt;String&gt;,
 }
 
-<span class="attr">#[serde_as]
-#[derive(Serialize, Deserialize, Debug)]
+<span class="attr">#[derive(Serialize, Deserialize, Debug)]
 </span><span class="doccomment">/// [SplitProofs] maps the split proof json file which contains the main proof and the merkle statements
 </span><span class="kw">pub struct </span>SplitProofs {
-    <span class="attr">#[serde(
-        serialize_with = <span class="string">&quot;serialize_vec_u256_as_number&quot;</span>,
-        deserialize_with = <span class="string">&quot;deserialize_vec_u256_as_number&quot;
-    </span>)]
-    </span><span class="kw">pub </span>main_proof: Vec&lt;U256&gt;,
-    <span class="kw">pub </span>merkle_statements: HashMap&lt;String, MerkleStatementContractArgs&gt;,
-    <span class="kw">pub </span>fri_merkle_statements: Vec&lt;FRIMerkleStatementContractArgs&gt;,
+    <span class="kw">pub </span>main_proof: MainProof,
+    <span class="kw">pub </span>merkle_statements: HashMap&lt;String, MerkleStatement&gt;,
+    <span class="kw">pub </span>fri_merkle_statements: Vec&lt;FRIMerkleStatement&gt;,
 }
 
 <span class="comment">// Parses hex strings and pads with zeros to make it 64 characters long
 </span><span class="kw">fn </span>extract_hex(line: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;String, ParseError&gt; {
-    <span class="kw">let </span>re = Regex::new(<span class="string">r&quot;\(0x([0-9a-f]+)\)&quot;</span>)<span class="question-mark">?</span>;
+    <span class="kw">let </span>re = Regex::new(<span class="string">r"\(0x([0-9a-f]+)\)"</span>)<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(re
         .captures(line)
         .and_then(|cap| cap.get(<span class="number">1</span>))
-        .map_or_else(String::new, |m| <span class="macro">format!</span>(<span class="string">&quot;{:0&gt;64}&quot;</span>, m.as_str())))
+        .map_or_else(String::new, |m| <span class="macro">format!</span>(<span class="string">"{:0&gt;64}"</span>, m.as_str())))
 }
 
 <span class="doccomment">/// Example:
 /// /cpu air/STARK/FRI/Decommitment/Layer 0/Virtual Oracle/Trace 0: For node 18762888: Hash(0x0000000000000000000000006671d703e83592b3b9d60eb1f91e8e0b8561f3d1)
 </span><span class="kw">fn </span>is_merkle_line(line: <span class="kw-2">&amp;</span>str) -&gt; bool {
-    line.contains(<span class="string">&quot;Decommitment&quot;</span>) &amp;&amp; line.contains(<span class="string">&quot;node&quot;</span>) &amp;&amp; line.contains(<span class="string">&quot;Hash&quot;</span>)
+    line.contains(<span class="string">"Decommitment"</span>) &amp;&amp; line.contains(<span class="string">"node"</span>) &amp;&amp; line.contains(<span class="string">"Hash"</span>)
 }
 
 <span class="doccomment">/// Parses a proof annotation line which is part of a Merkle decommitment, and returns the name
 /// of the Merkle, the node provided, and the hash digest.
 </span><span class="kw">fn </span>parse_merkle_line(line: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;MerkleLine, ParseError&gt; {
     <span class="kw">let </span>name = line
-        .split(<span class="string">&#39;/&#39;</span>)
+        .split(<span class="string">'/'</span>)
         .last()
         .ok_or(ParseError::InvalidLineFormat)<span class="question-mark">?
-        </span>.split(<span class="string">&#39;:&#39;</span>)
+        </span>.split(<span class="string">':'</span>)
         .next()
         .ok_or(ParseError::InvalidLineFormat)<span class="question-mark">?
         </span>.to_string();
 
     <span class="kw">let </span>node_str = line
-        .split(<span class="string">&quot;node &quot;</span>)
+        .split(<span class="string">"node "</span>)
         .nth(<span class="number">1</span>)
         .ok_or(ParseError::InvalidLineFormat)<span class="question-mark">?
-        </span>.split(<span class="string">&#39;:&#39;</span>)
+        </span>.split(<span class="string">':'</span>)
         .next()
         .ok_or(ParseError::InvalidLineFormat)<span class="question-mark">?</span>;
 
@@ -956,26 +926,26 @@
 }
 
 <span class="kw">fn </span>is_merkle_data_line(line: <span class="kw-2">&amp;</span>str) -&gt; bool {
-    line.contains(<span class="string">&quot;Decommitment&quot;</span>) &amp;&amp; line.contains(<span class="string">&quot;element #&quot;</span>) &amp;&amp; line.contains(<span class="string">&quot;Data&quot;</span>)
+    line.contains(<span class="string">"Decommitment"</span>) &amp;&amp; line.contains(<span class="string">"element #"</span>) &amp;&amp; line.contains(<span class="string">"Data"</span>)
 }
 
 <span class="doccomment">/// Parses a proof annotation line which is part of a Merkle decommitment as a package completion
 /// line, and returns the name of the Merkle, the node provided, and the data element.
 </span><span class="kw">fn </span>parse_merkle_data_line(line: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;MerkleLine, ParseError&gt; {
     <span class="kw">let </span>name = line
-        .split(<span class="string">&#39;/&#39;</span>)
+        .split(<span class="string">'/'</span>)
         .last()
         .ok_or(ParseError::InvalidLineFormat)<span class="question-mark">?
-        </span>.split(<span class="string">&#39;:&#39;</span>)
+        </span>.split(<span class="string">':'</span>)
         .next()
         .ok_or(ParseError::InvalidLineFormat)<span class="question-mark">?
         </span>.to_string();
 
     <span class="kw">let </span>node_str = line
-        .split(<span class="string">&quot;element #&quot;</span>)
+        .split(<span class="string">"element #"</span>)
         .nth(<span class="number">1</span>)
         .ok_or(ParseError::InvalidLineFormat)<span class="question-mark">?
-        </span>.split(<span class="string">&#39;:&#39;</span>)
+        </span>.split(<span class="string">':'</span>)
         .next()
         .ok_or(ParseError::InvalidLineFormat)<span class="question-mark">?</span>;
 
@@ -994,29 +964,29 @@
 <span class="doccomment">/// Example:
 /// /cpu air/STARK/FRI/Decommitment/Layer 4: Row 242, Column 3: Field Element(0x32bb09aed5ade9cadd9c0e76f261422cb1ef1f483f28cfe06b81d416defde66)
 </span><span class="kw">fn </span>is_fri_line(line: <span class="kw-2">&amp;</span>str) -&gt; bool {
-    line.contains(<span class="string">&quot;Decommitment&quot;</span>)
-        &amp;&amp; line.contains(<span class="string">&quot;Row&quot;</span>)
-        &amp;&amp; line.contains(<span class="string">&quot;Field Element&quot;</span>)
-        &amp;&amp; !line.contains(<span class="string">&quot;Virtual Oracle&quot;</span>)
+    line.contains(<span class="string">"Decommitment"</span>)
+        &amp;&amp; line.contains(<span class="string">"Row"</span>)
+        &amp;&amp; line.contains(<span class="string">"Field Element"</span>)
+        &amp;&amp; !line.contains(<span class="string">"Virtual Oracle"</span>)
 }
 
 <span class="doccomment">/// Parses a proof annotation line which is part of a FRI decommitment, and returns the name
 /// of the FRI, the cell provided, and the field element.
 </span><span class="kw">fn </span>parse_fri_line(line: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;FriLine, ParseError&gt; {
-    <span class="kw">let </span>parts: Vec&lt;<span class="kw-2">&amp;</span>str&gt; = line.split(<span class="string">&#39;/&#39;</span>).collect();
+    <span class="kw">let </span>parts: Vec&lt;<span class="kw-2">&amp;</span>str&gt; = line.split(<span class="string">'/'</span>).collect();
     <span class="kw">let </span>name = parts
         .last()
         .ok_or(ParseError::InvalidLineFormat)<span class="question-mark">?
-        </span>.split(<span class="string">&#39;:&#39;</span>)
+        </span>.split(<span class="string">':'</span>)
         .next()
         .ok_or(ParseError::InvalidLineFormat)<span class="question-mark">?
         </span>.to_string();
 
     <span class="kw">let </span>row_col_part = line
-        .split(<span class="string">&#39;:&#39;</span>)
+        .split(<span class="string">':'</span>)
         .nth_back(<span class="number">1</span>)
         .ok_or(ParseError::InvalidLineFormat)<span class="question-mark">?</span>;
-    <span class="kw">let </span>row_col: Vec&lt;<span class="kw-2">&amp;</span>str&gt; = row_col_part.split(<span class="string">&#39;,&#39;</span>).collect();
+    <span class="kw">let </span>row_col: Vec&lt;<span class="kw-2">&amp;</span>str&gt; = row_col_part.split(<span class="string">','</span>).collect();
     <span class="kw">if </span>row_col.len() != <span class="number">2 </span>{
         <span class="kw">return </span><span class="prelude-val">Err</span>(ParseError::InvalidLineFormat);
     }
@@ -1045,26 +1015,26 @@
 <span class="doccomment">/// Example:
 /// /cpu air/STARK/FRI/Decommitment/Last Layer: xInv for index 2030: Field Element(0x6446597268afd0e19853257f3caf5f1d4bd896ae7edeba0047d8c09cf399b7b)
 </span><span class="kw">fn </span>is_fri_xinv_line(line: <span class="kw-2">&amp;</span>str) -&gt; bool {
-    line.contains(<span class="string">&quot;Decommitment&quot;</span>) &amp;&amp; line.contains(<span class="string">&quot;xInv&quot;</span>) &amp;&amp; line.contains(<span class="string">&quot;Field Element&quot;</span>)
+    line.contains(<span class="string">"Decommitment"</span>) &amp;&amp; line.contains(<span class="string">"xInv"</span>) &amp;&amp; line.contains(<span class="string">"Field Element"</span>)
 }
 
 <span class="doccomment">/// Parses a proof extra annotation line which contains the xInv for a FRI query, and returns the
 /// name of the FRI, the index provided, and the xInv.
 </span><span class="kw">fn </span>parse_fri_xinv_line(line: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;FriXInvLine, ParseError&gt; {
-    <span class="kw">let </span>parts: Vec&lt;<span class="kw-2">&amp;</span>str&gt; = line.split(<span class="string">&#39;/&#39;</span>).collect();
+    <span class="kw">let </span>parts: Vec&lt;<span class="kw-2">&amp;</span>str&gt; = line.split(<span class="string">'/'</span>).collect();
     <span class="kw">let </span>name = parts
         .last()
         .ok_or(ParseError::InvalidLineFormat)<span class="question-mark">?
-        </span>.split(<span class="string">&#39;:&#39;</span>)
+        </span>.split(<span class="string">':'</span>)
         .next()
         .ok_or(ParseError::InvalidLineFormat)<span class="question-mark">?
         </span>.to_string();
 
     <span class="kw">let </span>index_str = line
-        .split(<span class="string">&quot;index &quot;</span>)
+        .split(<span class="string">"index "</span>)
         .nth(<span class="number">1</span>)
         .ok_or(ParseError::InvalidLineFormat)<span class="question-mark">?
-        </span>.split(<span class="string">&#39;:&#39;</span>)
+        </span>.split(<span class="string">':'</span>)
         .next()
         .ok_or(ParseError::InvalidLineFormat)<span class="question-mark">?</span>;
 
@@ -1085,32 +1055,32 @@
 <span class="doccomment">/// Example
 /// P-&gt;V[23680:23712]: /cpu air/STARK/FRI/Commitment/Layer 4: Commitment: Hash(0x000000000000000000000000ab09e126b366725542268572e3303dcaccf142a5)
 </span><span class="kw">fn </span>is_commitment_line(line: <span class="kw-2">&amp;</span>str) -&gt; bool {
-    line.contains(<span class="string">&quot;Commitment&quot;</span>) &amp;&amp; line.contains(<span class="string">&quot;Hash&quot;</span>)
+    line.contains(<span class="string">"Commitment"</span>) &amp;&amp; line.contains(<span class="string">"Hash"</span>)
 }
 
 <span class="doccomment">/// Parses a proof annotation line of a Merkle commitment, and returns the name
 /// of the Merkle and the hash digest.
-/// For &quot;Commit on Trace&quot; lines, the name (index) of the trace is not found inside the line, but
+/// For "Commit on Trace" lines, the name (index) of the trace is not found inside the line, but
 /// instead is tracked by a global counter.
 </span><span class="kw">fn </span>parse_commitment_line(
     line: <span class="kw-2">&amp;</span>str,
     trace_commitment_counter: <span class="kw-2">&amp;mut </span>usize,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(CommitmentLine, usize), ParseError&gt; {
-    <span class="kw">let </span>parts: Vec&lt;<span class="kw-2">&amp;</span>str&gt; = line.split(<span class="string">&#39;:&#39;</span>).collect();
+    <span class="kw">let </span>parts: Vec&lt;<span class="kw-2">&amp;</span>str&gt; = line.split(<span class="string">':'</span>).collect();
     <span class="kw">let </span>path_parts: Vec&lt;<span class="kw-2">&amp;</span>str&gt; = parts
         .get(<span class="number">2</span>)
         .ok_or(ParseError::InvalidLineFormat)<span class="question-mark">?
         </span>.trim()
-        .split(<span class="string">&#39;/&#39;</span>)
+        .split(<span class="string">'/'</span>)
         .collect();
     <span class="kw">let </span>name;
     <span class="kw">let </span>new_trace_commitment_counter;
 
-    <span class="kw">if </span>path_parts.last() == <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="string">&quot;Commit on Trace&quot;</span>) {
-        name = <span class="macro">format!</span>(<span class="string">&quot;Trace {}&quot;</span>, trace_commitment_counter);
+    <span class="kw">if </span>path_parts.last() == <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="string">"Commit on Trace"</span>) {
+        name = <span class="macro">format!</span>(<span class="string">"Trace {}"</span>, trace_commitment_counter);
         <span class="kw-2">*</span>trace_commitment_counter += <span class="number">1</span>;
         new_trace_commitment_counter = <span class="kw-2">*</span>trace_commitment_counter;
-    } <span class="kw">else if </span>path_parts.get(path_parts.len().saturating_sub(<span class="number">2</span>)) == <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="string">&quot;Commitment&quot;</span>) {
+    } <span class="kw">else if </span>path_parts.get(path_parts.len().saturating_sub(<span class="number">2</span>)) == <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="string">"Commitment"</span>) {
         name = path_parts
             .last()
             .map(|s| s.to_string())
@@ -1134,17 +1104,17 @@
 <span class="doccomment">/// Example:
 /// V-&gt;P: /cpu air/STARK/FRI/Commitment/Layer 4: Evaluation point: Field Element(0x6afcea9769e097e3d5c3cb8ee22bcc51ed7e8cf8cfa617ee915a6af68736fee)
 </span><span class="kw">fn </span>is_eval_point_line(line: <span class="kw-2">&amp;</span>str) -&gt; bool {
-    line.contains(<span class="string">&quot;Evaluation point&quot;</span>) &amp;&amp; line.contains(<span class="string">&quot;Layer&quot;</span>)
+    line.contains(<span class="string">"Evaluation point"</span>) &amp;&amp; line.contains(<span class="string">"Layer"</span>)
 }
 
 <span class="doccomment">/// Parses a proof annotation line of an evaluation point submission, returning the layer number
 /// and point.
 </span><span class="kw">fn </span>parse_eval_point_line(line: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;EvalPointLine, ParseError&gt; {
-    <span class="kw">let </span>parts: Vec&lt;<span class="kw-2">&amp;</span>str&gt; = line.split(<span class="string">&#39;/&#39;</span>).collect();
+    <span class="kw">let </span>parts: Vec&lt;<span class="kw-2">&amp;</span>str&gt; = line.split(<span class="string">'/'</span>).collect();
     <span class="kw">let </span>name = parts
         .last()
         .ok_or(ParseError::InvalidLineFormat)<span class="question-mark">?
-        </span>.split(<span class="string">&#39;:&#39;</span>)
+        </span>.split(<span class="string">':'</span>)
         .next()
         .ok_or(ParseError::InvalidLineFormat)<span class="question-mark">?
         </span>.to_string();
@@ -1159,13 +1129,13 @@
 }
 
 <span class="doccomment">/// Parses a proof annotation line, returning the start and end indices of the proof segment
-/// which the line annotates, or (0,0) if the annotation is for verifier to prover &quot;interaction&quot;.
+/// which the line annotates, or (0,0) if the annotation is for verifier to prover "interaction".
 </span><span class="kw">fn </span>line_to_indices(line: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;(usize, usize), ParseError&gt; {
-    <span class="kw">if </span>!line.starts_with(<span class="string">&quot;P-&gt;V[&quot;</span>) {
+    <span class="kw">if </span>!line.starts_with(<span class="string">"P-&gt;V["</span>) {
         <span class="prelude-val">Ok</span>((<span class="number">0</span>, <span class="number">0</span>))
     } <span class="kw">else </span>{
-        <span class="kw">let </span>indices_part = <span class="kw-2">&amp;</span>line[<span class="number">5</span>..line.find(<span class="string">&#39;]&#39;</span>).ok_or(ParseError::InvalidLineFormat)<span class="question-mark">?</span>];
-        <span class="kw">let </span>indices: Vec&lt;<span class="kw-2">&amp;</span>str&gt; = indices_part.split(<span class="string">&#39;:&#39;</span>).collect();
+        <span class="kw">let </span>indices_part = <span class="kw-2">&amp;</span>line[<span class="number">5</span>..line.find(<span class="string">']'</span>).ok_or(ParseError::InvalidLineFormat)<span class="question-mark">?</span>];
+        <span class="kw">let </span>indices: Vec&lt;<span class="kw-2">&amp;</span>str&gt; = indices_part.split(<span class="string">':'</span>).collect();
         <span class="kw">if </span>indices.len() != <span class="number">2 </span>{
             <span class="prelude-val">Err</span>(ParseError::InvalidLineFormat)
         } <span class="kw">else </span>{
@@ -1217,7 +1187,7 @@
 
 <span class="kw">fn </span>montgomery_encode(element: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;U256, ParseError&gt; {
     <span class="kw">let </span>prime = BigUint::from_str_radix(
-        <span class="string">&quot;800000000000011000000000000000000000000000000000000000000000001&quot;</span>,
+        <span class="string">"800000000000011000000000000000000000000000000000000000000000001"</span>,
         <span class="number">16</span>,
     )<span class="question-mark">?</span>;
     <span class="kw">let </span>num = BigUint::from_str_radix(element, <span class="number">16</span>)<span class="question-mark">?</span>;
@@ -1444,7 +1414,7 @@
             fri_original_dict.get_mut(<span class="kw-2">&amp;</span>fline.name).unwrap().push(fline);
         } <span class="kw">else </span>{
             main_annot.push_str(<span class="kw-2">&amp;</span>line);
-            main_annot.push(<span class="string">&#39;\n&#39;</span>);
+            main_annot.push(<span class="string">'\n'</span>);
             <span class="kw">let </span>(start, end) = line_to_indices(<span class="kw-2">&amp;</span>line)<span class="question-mark">?</span>;
             main_proof.extend_from_slice(<span class="kw-2">&amp;</span>orig_proof[start..end]);
         }
@@ -1476,7 +1446,7 @@
             </span>.clone();
         <span class="kw">let </span>heights: Vec&lt;usize&gt; = merkle_extras
             .iter()
-            .map(|mline| mline.node.leading_zeros() <span class="kw">as </span>usize - <span class="number">1</span>)
+            .map(|mline| mline.node.bits() - <span class="number">1</span>)
             .collect();
         <span class="comment">// Ensure all heights are the same
         </span><span class="kw">let </span>height = <span class="kw-2">*</span>heights.first().ok_or(ParseError::InvalidLineFormat)<span class="question-mark">?</span>;
@@ -1488,12 +1458,12 @@
         merkle_extras_dict.insert(name.clone(), Vec::new());
 
         <span class="kw">for </span>line <span class="kw">in </span>annot_lines {
-            <span class="kw">if </span>line.contains(name) &amp;&amp; line.contains(<span class="string">&quot;Column 0&quot;</span>) &amp;&amp; line.contains(<span class="string">&quot;Field Element&quot;</span>) {
+            <span class="kw">if </span>line.contains(name) &amp;&amp; line.contains(<span class="string">"Column 0"</span>) &amp;&amp; line.contains(<span class="string">"Field Element"</span>) {
                 <span class="comment">// It is not a Fri line, but the structure is similar enough for the parser.
                 </span><span class="kw">let </span>parsed_fri_line = parse_fri_line(line)<span class="question-mark">?</span>;
                 <span class="kw">let </span>node = U256::from(parsed_fri_line.row) + U256::from(<span class="number">1 </span>&lt;&lt; height);
                 <span class="kw">let </span>element = montgomery_encode(<span class="kw-2">&amp;</span>parsed_fri_line.element)<span class="question-mark">?</span>;
-                <span class="kw">let </span>element_hex = <span class="macro">format!</span>(<span class="string">&quot;{:0&gt;64x}&quot;</span>, element);
+                <span class="kw">let </span>element_hex = <span class="macro">format!</span>(<span class="string">"{:0&gt;64x}"</span>, element);
                 <span class="kw">let </span>merkle_line = MerkleLine {
                     name: name.clone(),
                     node,
@@ -1516,12 +1486,15 @@
 /// in binary form, and a dictionary merkles_statements from the names of the merkle
 /// commitments used in the proof to dictionaries containing all data necessary for
 /// registering them in the Merkle Fact Registry.
-</span><span class="kw">pub fn </span>split_fri_merkle_statements(proof_json: AnnotatedProof) -&gt; <span class="prelude-ty">Result</span>&lt;SplitProofs, ParseError&gt; {
+</span><span class="kw">pub fn </span>split_fri_merkle_statements(
+    annotated_proof: AnnotatedProof,
+) -&gt; <span class="prelude-ty">Result</span>&lt;SplitProofs, ParseError&gt; {
     <span class="comment">// Decode the hexadecimal string
-    </span><span class="kw">let </span>orig_proof = hex::decode(<span class="kw-2">&amp;</span>proof_json.proof_hex)<span class="question-mark">?</span>;
+    </span><span class="kw">let </span>orig_proof = hex::decode(<span class="kw-2">&amp;</span>annotated_proof.proof_hex)<span class="question-mark">?</span>;
+    <span class="kw">let </span>(z, alpha) = annotated_proof.extract_interaction_elements();
 
-    <span class="kw">let </span>annot_lines = proof_json.annotations;
-    <span class="kw">let </span>extra_annot_lines = proof_json.extra_annotations;
+    <span class="kw">let </span>annot_lines = annotated_proof.annotations;
+    <span class="kw">let </span>extra_annot_lines = annotated_proof.extra_annotations;
 
     <span class="kw">let </span>(<span class="kw-2">mut </span>merkle_extras_dict, fri_extras_list) =
         parse_fri_merkles_extra(extra_annot_lines.iter().map(|s| s.as_str()).collect())<span class="question-mark">?</span>;
@@ -1588,19 +1561,13 @@
         main_proof
     };
 
-    <span class="kw">let </span>main_proof = proof_hex2int_list(main_proof);
-
-    <span class="comment">// convert merkle_statements to contract args
-    </span><span class="kw">let </span>merkle_statements = merkle_statements
-        .into_iter()
-        .map(|(name, statement)| (name, MerkleStatementContractArgs::from(statement)))
-        .collect::&lt;HashMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;();
-
-    <span class="comment">// convert fri_merkle_statements to contract args
-    </span><span class="kw">let </span>fri_merkle_statements = fri_merkle_statements
-        .into_iter()
-        .map(FRIMerkleStatementContractArgs::from)
-        .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+    <span class="kw">let </span>main_proof: MainProof = MainProof::new(
+        proof_hex2int_list(main_proof),
+        annotated_proof.proof_parameters,
+        annotated_proof.public_input,
+        z,
+        alpha,
+    );
 
     <span class="prelude-val">Ok</span>(SplitProofs {
         main_proof,
@@ -1610,7 +1577,7 @@
 }
 
 <span class="doccomment">/// Gets a vec of u8 ints and returns it as a 256bits padded list of integer.
-/// This conversion is what&#39;s needed in order to send a binary proof
+/// This conversion is what's needed in order to send a binary proof
 /// into an EVM deployed verifier.
 </span><span class="kw">fn </span>proof_hex2int_list(proof: Vec&lt;u8&gt;) -&gt; Vec&lt;U256&gt; {
     <span class="kw">let </span>chunk_size = <span class="number">32</span>; <span class="comment">// U256 is 32 bytes (256 bits)

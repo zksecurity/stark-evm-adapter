@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["MerkleStatement","MerkleStatementContractArgs"]};
+window.SIDEBAR_ITEMS = {"mod":["merkle_statement_contract"],"struct":["MerkleStatement"]};

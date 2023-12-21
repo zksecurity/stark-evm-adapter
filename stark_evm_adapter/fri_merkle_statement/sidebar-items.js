@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["FRIMerkleStatement","FRIMerkleStatementContractArgs"]};
+window.SIDEBAR_ITEMS = {"mod":["fri_statement_contract"],"struct":["FRIMerkleStatement"]};

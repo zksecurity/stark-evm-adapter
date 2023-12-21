@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["AnnotatedProof","FriParameters","MemorySegment","ProofParameters","PublicInput","PublicMemory","StarkParameters"]};

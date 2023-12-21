@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["gps_statement_verifier_contract"],"struct":["MainProof"]};
