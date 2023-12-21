@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::ContractFunctionCall;
 
-/// Decommitment for a trace merkle statement
+/// Decommitment for a merkle statement
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MerkleStatement {
     expected_root: U256,
