@@ -33,7 +33,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Provider::try_from(forked_url.unwrap().as_str())?
     } else {
         let url = url.unwrap();
-        anvil = Some(Anvil::new().fork(url).spawn());
+        anvil = Some(Anvil::new().fork(url).block_time(1u8).spawn());
         let endpoint = anvil.as_ref().unwrap().endpoint();
         Provider::<Http>::try_from(endpoint.as_str())?
     };
