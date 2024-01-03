@@ -229,24 +229,21 @@ impl MainProof {
         result.push(memory_value);
 
         result.push(U256::from(pages.len()));
-        let sorted_pages: Vec<Vec<U256>> = pages.into_values().collect();
-
-        for (i, page) in sorted_pages.iter().enumerate() {
-            // Append the page's first address, size and hash
-            if i != 0 {
+        
+        for i in 0..pages.len() {
+            let page = pages.get(&(i as u32)).unwrap();
+            let page_hash = if i == 0 {
+                let tokens: Vec<Token> = page.iter().map(|val| Token::Uint(*val)).collect();
+                let encoded = ethers::abi::encode_packed(&[Token::Array(tokens)]).unwrap();
+                U256::from(keccak256(encoded.as_slice()).as_slice())
+            } else {
                 // Verify that the addresses of the page are indeed continuous
                 let range: Vec<U256> = (0..page.len() as u64 / 2)
                     .map(|i| page[0] + U256::from(i))
                     .collect();
                 assert!(page.iter().step_by(2).eq(range.iter()));
                 result.push(page[0]); // First address
-            }
 
-            let page_hash = if i == 0 {
-                let tokens: Vec<Token> = page.iter().map(|val| Token::Uint(*val)).collect();
-                let encoded = ethers::abi::encode_packed(&[Token::Array(tokens)]).unwrap();
-                U256::from(keccak256(encoded.as_slice()).as_slice())
-            } else {
                 let tokens: Vec<Token> = page
                     .iter()
                     .skip(1)
