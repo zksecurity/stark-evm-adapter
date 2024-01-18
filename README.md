@@ -53,11 +53,13 @@ stark_evm_adapter gen-annotated-proof \
     --output annotated_proof.json
 ```
 
-The annotated proof originates from 3 file outputs of the [stone-prover](https://github.com/starkware-libs/stone-prover/tree/00b274b55c82077184be4c0758f7bed18950eaba#creating-and-verifying-a-proof-of-a-cairozero-program). 
+Generating an annotated proof requires the proof file from `cpu_air_prover` described [here](https://github.com/starkware-libs/stone-prover/tree/00b274b55c82077184be4c0758f7bed18950eaba#creating-and-verifying-a-proof-of-a-cairozero-program) as well as two annotation files from running `cpu_air_verifier` with `--annotation-file` and `--extra-output-file`:
+
+* `stark_evm_adapter --stone-proof-file` comes from `cpu_air_prover --out_file` (JSON format)
+* `stark_evm_adapter --stone-annotation-file` comes from `cpu_air_verifier --annotation-file` (.txt format)
+* `stark_evm_adapter --stone-extra-annotation-file` comes from `cpu_air_verifier --extra-output-file` (.txt format)
 
 Once you have this annotated proof, you can use it to generate the split proofs and submit them to the L1 EVM verifier. Please refer to the [example demo](https://github.com/zksecurity/stark-evm-adapter/blob/8af44a0aa61c89e36a08261320f234709e99ed71/examples/verify_stone_proof.rs#L18)
-
-_stone_proof.json_ comes from the _cpu_air_prover_ command, while the annotation files come from the _cpu_air_verifier_ command with arguments _annotation_file_ and _extra_output_file_.
 
 ## DEMO
 You can use docker to run the demo. The demo will generate split proofs from an annotated proof and submit them to the L1 EVM verifier.
