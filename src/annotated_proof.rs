@@ -59,6 +59,7 @@ pub struct MemorySegment {
 pub struct PublicMemory {
     pub address: u32,
     pub page: u32,
+    // todo refactor to u256
     pub value: String,
 }
 
