@@ -1,2 +1,9 @@
 /target
 .vscode
+/examples/cairo-lang/*
+/examples/bootloader/starkware/*
+/examples/bootloader/gen/*
+!.gitkeep
+/examples/bootloader/hidden/*
+/examples/stone-prover/cpu_air_prover
+/examples/stone-prover/cpu_air_verifier
