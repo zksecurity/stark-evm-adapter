@@ -295,8 +295,10 @@ impl MainProof {
         }
 
         // Append the products of the pages
-        for (_, page_prod) in page_prods {
-            result.push(page_prod);
+        // Note: this assumes that the pages are ordered from 0 to n
+        for index in 0..page_prods.len() {
+            let page_prod = page_prods.get(&(index as u32)).unwrap();
+            result.push(page_prod.clone());
         }
 
         result
@@ -557,7 +559,6 @@ impl MainProof {
 
             expected_page_sizes.extend_from_slice(&fact_topology.page_sizes);
         }
-
 
         if ptr != output.len() {
             return Err(format!(
