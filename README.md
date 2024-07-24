@@ -76,7 +76,7 @@ docker build -t stark-evm-adapter .
 Then, run the demo script:
 
 ```bash
-docker run -it -e "MAINNET_RPC=******" "ANNOTATED_PROOF=******" stark-evm-adapter
+docker run -it -e MAINNET_RPC="******" -e ANNOTATED_PROOF="./annotated_proof.json" stark-evm-adapter
 ```
 
 Note that you will need to set the environment variable `MAINNET_RPC` to the RPC endpoint of the Ethereum mainnet. For example, you can use [Infura](https://infura.io/) to get the RPC endpoint. This demo code will automatically make a fork of the mainnet and submit the split proofs to the L1 EVM verifier on the forked chain.
