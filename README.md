@@ -33,18 +33,22 @@ println!("{}", serde_json::to_string_pretty(&split_proofs).unwrap());
 
 Note that the annotated proof file, `annotated_proof.json`, can be generated using this CLI tool.
 
-## CLI 
+## CLI
+
 ### Installation
+
 ```bash
 cargo install stark_evm_adapter
 ```
 
 ### Usage
+
 ```bash
 stark_evm_adapter --help
 ```
 
 To generate an annotated proof based on the outputs of the stone-prover:
+
 ```bash
 stark_evm_adapter gen-annotated-proof \
     --stone-proof-file tests/fixtures/stone_proof.json \
@@ -53,23 +57,26 @@ stark_evm_adapter gen-annotated-proof \
     --output annotated_proof.json
 ```
 
-The annotated proof originates from 3 file outputs of the [stone-prover](https://github.com/starkware-libs/stone-prover/tree/00b274b55c82077184be4c0758f7bed18950eaba#creating-and-verifying-a-proof-of-a-cairozero-program). 
+The annotated proof originates from 3 file outputs of the [stone-prover](https://github.com/starkware-libs/stone-prover/tree/00b274b55c82077184be4c0758f7bed18950eaba#creating-and-verifying-a-proof-of-a-cairozero-program).
 
 Once you have this annotated proof, you can use it to generate the split proofs and submit them to the L1 EVM verifier. Please refer to the [example demo](https://github.com/zksecurity/stark-evm-adapter/blob/8af44a0aa61c89e36a08261320f234709e99ed71/examples/verify_stone_proof.rs#L18)
 
 _stone_proof.json_ comes from the _cpu_air_prover_ command, while the annotation files come from the _cpu_air_verifier_ command with arguments _annotation_file_ and _extra_output_file_.
 
 ## DEMO
+
 You can use docker to run the demo. The demo will generate split proofs from an annotated proof and submit them to the L1 EVM verifier.
 
 First, build the docker image:
+
 ```bash
 docker build -t stark-evm-adapter .
 ```
 
 Then, run the demo script:
+
 ```bash
-docker run -it -e "MAINNET_RPC=******" stark-evm-adapter
+docker run -it -e "MAINNET_RPC=******" "ANNOTATED_PROOF=******" stark-evm-adapter
 ```
 
 Note that you will need to set the environment variable `MAINNET_RPC` to the RPC endpoint of the Ethereum mainnet. For example, you can use [Infura](https://infura.io/) to get the RPC endpoint. This demo code will automatically make a fork of the mainnet and submit the split proofs to the L1 EVM verifier on the forked chain.
