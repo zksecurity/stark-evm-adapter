@@ -13,7 +13,7 @@ use stark_evm_adapter::{
     oods_statement::FactTopology,
     ContractFunctionCall,
 };
-use std::{convert::TryFrom, env, str::FromStr, sync::Arc};
+use std::{convert::TryFrom, env, fs::read_to_string, str::FromStr, sync::Arc};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -59,12 +59,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         from_wallet.with_chain_id(chain_id),
     ));
 
-    // load annotated proof
-    let origin_proof_file = include_str!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/examples/bootloader/gen/aggregated_proof.json"
-    ));
-    let annotated_proof: AnnotatedProof = serde_json::from_str(origin_proof_file).unwrap();
+    // // load annotated proof
+    let origin_proof_file = read_to_string(env::var("ANNOTATED_PROOF")?)?;
+    let annotated_proof: AnnotatedProof = serde_json::from_str(&origin_proof_file)?;
     // generate split proofs
     let split_proofs: SplitProofs = split_fri_merkle_statements(annotated_proof.clone()).unwrap();
 
@@ -122,8 +119,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .main_proof
         .generate_tasks_metadata(true, fact_topologies)
         .unwrap();
-
-    println!("task_metadata: {:?}", task_metadata);
 
     let call = split_proofs
         .main_proof

@@ -149,8 +149,6 @@ impl MainProof {
         cairo_aux_input.push(z);
         cairo_aux_input.push(alpha);
 
-        println!("cairo_aux_input: {:?}", cairo_aux_input);
-
         cairo_aux_input
     }
 
