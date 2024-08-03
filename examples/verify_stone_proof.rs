@@ -17,24 +17,23 @@ use std::{convert::TryFrom, env, fs::read_to_string, str::FromStr, sync::Arc};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // setup a local mainnet fork
-    let url = env::var("MAINNET_RPC");
-    let forked_url = env::var("FORKED_MAINNET_RPC");
-    // check either env MAINNET_RPC or FORK_MAINNET_RPC is set
-    if url.is_err() && forked_url.is_err() {
+    let fork_url = env::var("FORK_URL");
+    let url = env::var("URL");
+    // check either env FORK_URL or URL is set
+    if url.is_err() && fork_url.is_err() {
         panic!(
-            "Either MAINNET_RPC or FORK_MAINNET_RPC must be set in env. \
-        You can get a mainnet RPC url from https://infura.io/, \
-        or forked mainnet RPC url from https://tenderly.co/"
+            "Either URL or FORK_URL must be set in env. \
+        Set FORK_URL to run locally using an Anvil instance, \
+        or set URL to submit tx on-chain (or run on a forked instance hosted on https://tenderly.co/)"
         );
     }
 
     let mut anvil = None;
 
-    let provider: Provider<Http> = if forked_url.is_ok() {
-        Provider::try_from(forked_url.unwrap().as_str())?
+    let provider: Provider<Http> = if url.is_ok() {
+        Provider::try_from(url.unwrap().as_str())?
     } else {
-        let url = url.unwrap();
+        let url = fork_url.unwrap();
         anvil = Some(Anvil::new().fork(url).block_time(1u8).spawn());
         let endpoint = anvil.as_ref().unwrap().endpoint();
         Provider::<Http>::try_from(endpoint.as_str())?
@@ -45,9 +44,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("Anvil is running.");
     }
 
-    // test private key from anvil node
-    let from_key_bytes =
-        hex::decode("0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d").unwrap();
+    let private_key = env::var("PRIVATE_KEY").unwrap_or(
+        "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d".to_string(),
+    );
+    let from_key_bytes = hex::decode(private_key.trim_start_matches("0x")).unwrap();
 
     let from_signing_key = SigningKey::from_bytes(from_key_bytes.as_slice().into()).unwrap();
     let from_wallet: LocalWallet = LocalWallet::from(from_signing_key);
@@ -59,7 +59,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         from_wallet.with_chain_id(chain_id),
     ));
 
-    // // load annotated proof
+    // load annotated proof
     let origin_proof_file = read_to_string(env::var("ANNOTATED_PROOF")?)?;
     let annotated_proof: AnnotatedProof = serde_json::from_str(&origin_proof_file)?;
     // generate split proofs
@@ -82,7 +82,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let trace_merkle = split_proofs.merkle_statements.get(&key).unwrap();
 
         let call = trace_merkle.verify(contract_address, signer.clone());
-
         assert_call(call, &key).await?;
     }
 
@@ -113,7 +112,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     println!("Verifying main proof:");
-    let contract_address = Address::from_str("0x47312450B3Ac8b5b8e247a6bB6d523e7605bDb60").unwrap();
+    let contract_address = Address::from_str("0xd51a3d50d4d2f99a345a66971e650eea064dd8df").unwrap();
 
     let task_metadata = split_proofs
         .main_proof
@@ -123,7 +122,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let call = split_proofs
         .main_proof
         .verify(contract_address, signer, task_metadata);
-    // .gas(U256::from(5_000_000));
 
     assert_call(call, "Main proof").await?;
 

@@ -9,11 +9,9 @@ from starkware.cairo.lang.compiler.program import Program
 
 # Constants and parameters
 
-# configs for bootloader input 
+# configs for bootloader input
 TASK_PROGRAM_INPUT_PATH = "./fibonacci_input.json"
 TASK_PROGRAM_COMPILED_PATH = "./fibonacci_compiled.json"
-FACT_TOPOLOGIES_PATH = "./fact_topologies.json"
-BOOTLOADER_INPUT_PATH = "./gen/bootloader_input.json"
 SIMPLE_BOOTLOADER_PROGRAM_HASH = 382450030162484995497251732956824096484321811411123989415157331925872358847 # on-chain hash
 # Should hash to 2512868110374320373201527039528844198060791559490644211790716345994094747600
 SUPPORTED_CAIRO_VERIFIER_PROGRAM_HASHES = [
@@ -33,10 +31,10 @@ SUPPORTED_CAIRO_VERIFIER_PROGRAM_HASHES = [
     "0x323c8251dbd935f45105bc241765a5082d9a985cbc3bffece3382708fb88dc5"
 ]
 SUPPORTED_CAIRO_VERIFIER_PROGRAM_HASHES = [int(x, 16) for x in SUPPORTED_CAIRO_VERIFIER_PROGRAM_HASHES]
-print(SUPPORTED_CAIRO_VERIFIER_PROGRAM_HASHES)
+BOOTLOADER_INPUT_PATH = "./gen/bootloader_input.json"
+FACT_TOPOLOGIES_PATH = "./gen/fact_topologies.json"
 
 # configs for cairo-run
-# this should be updated to your local cairo-run executable
 CAIRO_RUN_PATH = "./starkware/cairo/lang/scripts/cairo-run"
 BOOTLOADER_PROGRAM_PATH = "./test_compiled_bootloader.json"
 MEMORY_FILE_PATH = "./gen/memory.bin"
@@ -46,19 +44,17 @@ PRIVATE_INPUT_PATH = "./gen/private_input.json"
 LAYOUT = "starknet"
 
 # configs for generating proof and annotations
-# this path should be updated to your local cpu_air_prover executable 
-# STONE_PROVER_PATH = "../stone-prover/cpu_air_prover"
-# this path should be updated to your local cpu_air_verifier executable 
-# STONE_VERIFIER_PATH = "../stone-prover/cpu_air_verifier"
+STONE_PROVER_PATH = "./stone-prover/cpu_air_prover"
+STONE_VERIFIER_PATH = "./stone-prover/cpu_air_verifier"
 PROOF_OUTPUT_PATH = "./gen/bootloader_proof.json"
 PROVER_CONFIG_PATH = "./cpu_air_prover_config.json"
 PARAMETER_PATH = "./cpu_air_params.json"
 ANNOTATION_FILE_PATH = "./gen/bootloader_proof_annotation.txt"
 EXTRA_ANNOTATION_FILE_PATH = "./gen/bootloader_proof_annotation_extra.txt"
 
-# configs for generating aggregated proof
+# configs for generating annotated proof
 STARK_EVM_ADAPTER = "stark_evm_adapter"
-AGGREGATED_PROOF_PATH = "./gen/aggregated_proof.json"
+ANNOTATED_PROOF_PATH = "./gen/annotated_proof.json"
 
 def main():
     task_program_input = json.load(open(TASK_PROGRAM_INPUT_PATH, "r"))
@@ -94,6 +90,7 @@ def main():
         json.dump(bootloader_input.dump(), f)
 
 
+    print("Running bootloader cairo program...")
     # Run the bootloader cairo program, and generate
     res = subprocess.run(
         [
@@ -125,48 +122,67 @@ def main():
         ],
         capture_output=True,
     )
-    print(res.stdout.decode(), res.stderr)
+    if res.returncode != 0:
+        print("Error running bootloader cairo program:")
+        print(res.stderr.decode())
+        exit(1)
+    print(res.stdout.decode())
 
-    # # Generate a bootloader proof by stone-prover with the outputs of the bootloader program execution above.
-    # res = subprocess.run(
-    #     [
-    #         STONE_PROVER_PATH,
-    #         f"--out_file={PROOF_OUTPUT_PATH}",
-    #         f"--private_input_file={PRIVATE_INPUT_PATH}",
-    #         f"--public_input_file={PUBLIC_INPUT_PATH}",
-    #         f"--prover_config_file={PROVER_CONFIG_PATH}",
-    #         f"--parameter_file={PARAMETER_PATH}",
-    #     ],
-    #     capture_output=True,
-    # )
-    # print(res.stdout.decode(), res.stderr)
+    print("Generating bootloader proof...")
+    # Generate a bootloader proof by stone-prover with the outputs of the bootloader program execution above.
+    res = subprocess.run(
+        [
+            STONE_PROVER_PATH,
+            f"--out_file={PROOF_OUTPUT_PATH}",
+            f"--private_input_file={PRIVATE_INPUT_PATH}",
+            f"--public_input_file={PUBLIC_INPUT_PATH}",
+            f"--prover_config_file={PROVER_CONFIG_PATH}",
+            f"--parameter_file={PARAMETER_PATH}",
+        ],
+        capture_output=True,
+    )
+    if res.returncode != 0:
+        print("Error generating bootloader proof:")
+        print(res.stderr.decode())
+        exit(1)
+    print(res.stdout.decode())
 
-    # # Generate the annotations for the bootloader proof and merge them into a single json file. 
-    # # This single json file is called the annotated proof, which will be split into multiple proofs by the stark-evm-adapter.
-    # # These split proofs are then submitted to the starknet verifier contract on L1.
-    # # https://zksecurity.github.io/stark-book/starkex/proof-splitter.html
-    # res = subprocess.run(
-    #     [
-    #         STONE_VERIFIER_PATH,
-    #         f"--in_file={PROOF_OUTPUT_PATH}",
-    #         f"--annotation_file={ANNOTATION_FILE_PATH}",
-    #         f"--extra_output_file={EXTRA_ANNOTATION_FILE_PATH}",
-    #     ],
-    #     capture_output=True,
-    # )
-    # print(res.stdout.decode(), res.stderr)
+    print("Generating annotations for the bootloader proof...")
+    # Generate the annotations for the bootloader proof and merge them into a single json file. 
+    # This single json file is called the annotated proof, which will be split into multiple proofs by the stark-evm-adapter.
+    # These split proofs are then submitted to the starknet verifier contract on L1.
+    # https://zksecurity.github.io/stark-book/starkex/proof-splitter.html
+    res = subprocess.run(
+        [
+            STONE_VERIFIER_PATH,
+            f"--in_file={PROOF_OUTPUT_PATH}",
+            f"--annotation_file={ANNOTATION_FILE_PATH}",
+            f"--extra_output_file={EXTRA_ANNOTATION_FILE_PATH}",
+        ],
+        capture_output=True,
+    )
+    if res.returncode != 0:
+        print("Error generating annotations for the bootloader proof:")
+        print(res.stderr.decode())
+        exit(1)
+    print(res.stdout.decode())
 
-    # res = subprocess.run(
-    #     [
-    #         STARK_EVM_ADAPTER,
-    #         "gen-annotated-proof",
-    #         f"--stone-proof-file={PROOF_OUTPUT_PATH}",
-    #         f"--stone-annotation-file={ANNOTATION_FILE_PATH}",
-    #         f"--stone-extra-annotation-file={EXTRA_ANNOTATION_FILE_PATH}",
-    #         f"--output={AGGREGATED_PROOF_PATH}",
-    #     ],
-    #     capture_output=True,
-    # )
-    # print(res.stdout.decode(), res.stderr)
+    print("Generating annotated proof...")
+    res = subprocess.run(
+        [
+            STARK_EVM_ADAPTER,
+            "gen-annotated-proof",
+            f"--stone-proof-file={PROOF_OUTPUT_PATH}",
+            f"--stone-annotation-file={ANNOTATION_FILE_PATH}",
+            f"--stone-extra-annotation-file={EXTRA_ANNOTATION_FILE_PATH}",
+            f"--output={ANNOTATED_PROOF_PATH}",
+        ],
+        capture_output=True,
+    )
+    if res.returncode != 0:
+        print("Error generating annotated proof:")
+        print(res.stderr.decode())
+        exit(1)
+    print(res.stdout.decode())
 
 main()

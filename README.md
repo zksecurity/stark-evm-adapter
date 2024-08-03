@@ -63,9 +63,37 @@ Once you have this annotated proof, you can use it to generate the split proofs 
 
 _stone_proof.json_ comes from the _cpu_air_prover_ command, while the annotation files come from the _cpu_air_verifier_ command with arguments _annotation_file_ and _extra_output_file_.
 
-## DEMO
+## Demo
 
-You can use docker to run the demo. The demo will generate split proofs from an annotated proof and submit them to the L1 EVM verifier.
+You can run the demo to split the proof and submit it to the Ethereum mainnet verifier. The [existing proof](./examples/bootloader/fib_annotated_proof.json) contains an internal proof that the 10th Fibonacci number is 144.
+
+### Using existing proof
+
+First, install Anvil using [Foundry](https://book.getfoundry.sh/getting-started/installation)
+
+Then, run the following command:
+
+```bash
+FORK_URL=<ETHEREUM-MAINNET-RPC> \
+    ANNOTATED_PROOF=./examples/bootloader/fib_annotated_proof.json \
+    cargo run --example verify_stone_proof
+```
+
+### Generate new proof
+
+You can create a new proof using Docker
+
+#### Prerequisites
+
+- Copy `objects.py` and `utils.py` for bootloader as `hidden/bootloader-objects.py` and `hidden/bootloader-utils.py`
+- Copy `objects.py` and `utils.py` for simple bootloader as `hidden/simple-bootloader-objects.py` and `hidden/simple-bootloader-utils.py`
+- Copy `cpu_air_prover` and `cpu_air_verifier` binaries generated from [stone-prover](https://github.com/starkware-libs/stone-prover) into the `./examples/bootloader/stone-prover` directory
+
+#### Customize program that is being proven
+
+- Replace `TASK_PROGRAM_INPUT_PATH` and `TASK_PROGRAM_COMPILED_PATH` variables in `test_bootloader_fib.py` with your own program.
+
+#### Run
 
 First, build the docker image:
 
@@ -73,10 +101,21 @@ First, build the docker image:
 docker build -t stark-evm-adapter .
 ```
 
-Then, run the demo script:
+Then, copy over the annotated proof from the docker container:
 
 ```bash
-docker run -it -e MAINNET_RPC="******" -e ANNOTATED_PROOF="./annotated_proof.json" stark-evm-adapter
+container_id=$(docker create stark-evm-adapter)
+
+docker cp -L ${container_id}:/opt/app/examples/bootloader/gen/annotated_proof.json ./annotated_proof.json
 ```
 
-Note that you will need to set the environment variable `MAINNET_RPC` to the RPC endpoint of the Ethereum mainnet. For example, you can use [Infura](https://infura.io/) to get the RPC endpoint. This demo code will automatically make a fork of the mainnet and submit the split proofs to the L1 EVM verifier on the forked chain.
+Finally, run the demo script:
+
+```bash
+docker run -it -e FORK_URL=<ETHEREUM-MAINNET-RPC> -e ANNOTATED_PROOF=./examples/bootloader/gen/annotated_proof.json stark-evm-adapter
+```
+
+### Note
+
+- Alternatively, you can use `URL` instead of `FORK_URL` env to submit transactions on-chain instead of running them on a fork.
+- This example verifies proofs on [`0xd51a3d50d4d2f99a345a66971e650eea064dd8df`](https://etherscan.io/address/0xd51a3d50d4d2f99a345a66971e650eea064dd8df), which is the previous version of the verifier on Ethereum. The most recent version is [`0x9fb7F48dCB26b7bFA4e580b2dEFf637B13751942`](https://etherscan.io/address/0x9fb7F48dCB26b7bFA4e580b2dEFf637B13751942), and we are working to update this example to use the most recent version.
