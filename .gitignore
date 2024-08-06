@@ -1,2 +1,8 @@
 /target
 .vscode
+/examples/cairo-lang/*
+/examples/bootloader/starkware/*
+/examples/bootloader/gen/*
+/examples/bootloader/hidden/*
+/examples/bootloader/stone-prover/*
+!.gitkeep
