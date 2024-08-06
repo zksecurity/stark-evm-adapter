@@ -16,7 +16,7 @@ jobs:
   run_checks:
     strategy:
       matrix:
-        rust_toolchain_version: ["1.72"]
+        rust_toolchain_version: ["1.74"]
 
     runs-on: ubuntu-latest
     name: Run some basic checks and tests
