@@ -87,7 +87,7 @@ You can create a new proof using Docker
 
 - Copy `objects.py` and `utils.py` for bootloader as `hidden/bootloader-objects.py` and `hidden/bootloader-utils.py`
 - Copy `objects.py` and `utils.py` for simple bootloader as `hidden/simple-bootloader-objects.py` and `hidden/simple-bootloader-utils.py`
-- Copy `cpu_air_prover` and `cpu_air_verifier` binaries generated from [stone-prover](https://github.com/starkware-libs/stone-prover) into the `./examples/bootloader/stone-prover` directory
+- Copy `cpu_air_prover` and `cpu_air_verifier` binaries generated from [stone-prover](https://github.com/starkware-libs/stone-prover) into the `./examples/bootloader/stone-prover` directory (Can also use the binaries from this [release](https://github.com/zksecurity/stark-evm-adapter/releases/tag/v0.1.0-alpha))
 
 #### Customize program that is being proven
 
