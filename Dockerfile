@@ -35,9 +35,13 @@ RUN pip install -r examples/bootloader/requirements.txt
 # install cairo-lang
 WORKDIR /opt/app/examples/bootloader
 RUN git clone https://github.com/starkware-libs/cairo-lang.git cairo-lang
-RUN cd cairo-lang && git checkout efa9648f57568aad8f8a13fbf027d2de7c63c2c0
-RUN cp -r cairo-lang/src/starkware /starkware
+RUN cd cairo-lang && git checkout efa9648f57568aad8f8a13fbf027d2de7c63c2c0 && cd ..
+RUN cp -r cairo-lang/src/starkware starkware/
 RUN rm -rf cairo-lang/
+RUN cp hidden/simple-bootloader-utils.py starkware/cairo/bootloaders/simple_bootloader/utils.py
+RUN cp hidden/simple-bootloader-objects.py starkware/cairo/bootloaders/simple_bootloader/objects.py
+RUN cp hidden/bootloader-utils.py starkware/cairo/bootloaders/bootloader/utils.py
+RUN cp hidden/bootloader-objects.py starkware/cairo/bootloaders/bootloader/objects.py
 
 # build the Rust project
 WORKDIR /opt/app
