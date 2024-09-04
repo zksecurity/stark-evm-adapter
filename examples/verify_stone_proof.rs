@@ -65,11 +65,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // generate split proofs
     let split_proofs: SplitProofs = split_fri_merkle_statements(annotated_proof.clone()).unwrap();
 
-    let topologies_file = include_str!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/tests/fixtures/fact_topologies.json"
-    ));
-    let topology_json: serde_json::Value = serde_json::from_str(topologies_file).unwrap();
+    let topologies_file = read_to_string(env::var("FACT_TOPOLOGIES")?)?;
+    let topology_json: serde_json::Value = serde_json::from_str(&topologies_file).unwrap();
 
     let fact_topologies: Vec<FactTopology> =
         serde_json::from_value(topology_json.get("fact_topologies").unwrap().clone()).unwrap();

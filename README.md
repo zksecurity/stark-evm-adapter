@@ -75,7 +75,8 @@ Then, run the following command:
 
 ```bash
 FORK_URL=<ETHEREUM-MAINNET-RPC> \
-    ANNOTATED_PROOF=./examples/bootloader/fib_annotated_proof.json \
+    ANNOTATED_PROOF=./annotated_proof.json \
+    FACT_TOPOLOGIES=./fact_topologies.json \
     cargo run --example verify_stone_proof
 ```
 
@@ -95,24 +96,16 @@ You can create a new proof using Docker
 
 #### Run
 
-First, build the docker image:
+First, build the docker image. This will create an annotated proof and a fact topologies file that is needed to split the proof for verifying on Ethereum:
 
 ```bash
 docker build -t stark-evm-adapter .
 ```
 
-Then, copy over the annotated proof from the docker container:
+Then, run the demo script:
 
 ```bash
-container_id=$(docker create stark-evm-adapter)
-
-docker cp -L ${container_id}:/opt/app/examples/bootloader/gen/annotated_proof.json ./annotated_proof.json
-```
-
-Finally, run the demo script:
-
-```bash
-docker run -it -e FORK_URL=<ETHEREUM-MAINNET-RPC> -e ANNOTATED_PROOF=./examples/bootloader/gen/annotated_proof.json stark-evm-adapter
+docker run -it -e FORK_URL=<ETHEREUM-MAINNET-RPC> -e ANNOTATED_PROOF=./examples/bootloader/gen/annotated_proof.json -e FACT_TOPOLOGIES=./examples/bootloader/gen/fact_topologies.json stark-evm-adapter
 ```
 
 ### Note
