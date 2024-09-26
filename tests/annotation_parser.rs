@@ -52,7 +52,7 @@ mod tests {
 
         let fri_merkle_contract_args = split_proofs
             .fri_merkle_statements
-            .get(0)
+            .first()
             .unwrap()
             .contract_function_call();
         assert_eq!(split_proofs.fri_merkle_statements.len(), 6);
