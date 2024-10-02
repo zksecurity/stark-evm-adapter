@@ -774,8 +774,6 @@
         </span>cairo_aux_input.push(z);
         cairo_aux_input.push(alpha);
 
-        <span class="macro">println!</span>(<span class="string">"cairo_aux_input: {:?}"</span>, cairo_aux_input);
-
         cairo_aux_input
     }
 
@@ -920,8 +918,10 @@
         </span>}
 
         <span class="comment">// Append the products of the pages
-        </span><span class="kw">for </span>(<span class="kw">_</span>, page_prod) <span class="kw">in </span>page_prods {
-            result.push(page_prod);
+        // Note: this assumes that the pages are ordered from 0 to n
+        </span><span class="kw">for </span>index <span class="kw">in </span><span class="number">0</span>..page_prods.len() {
+            <span class="kw">let </span>page_prod = page_prods.get(<span class="kw-2">&amp;</span>(index <span class="kw">as </span>u32)).unwrap();
+            result.push(<span class="kw-2">*</span>page_prod);
         }
 
         result
