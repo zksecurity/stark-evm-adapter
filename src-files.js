@@ -1,4 +1,3 @@
-var srcIndex = new Map(JSON.parse('[\
-["stark_evm_adapter",["",[],["annotated_proof.rs","annotation_parser.rs","errors.rs","fri_merkle_statement.rs","lib.rs","merkle_statement.rs","oods_statement.rs"]]]\
-]'));
+var srcIndex = new Map(JSON.parse('[["stark_evm_adapter",["",[],["annotated_proof.rs","annotation_parser.rs","errors.rs","fri_merkle_statement.rs","lib.rs","merkle_statement.rs","oods_statement.rs"]]]]'));
 createSrcSidebar();
+//{"start":36,"fragment_lengths":[164]}
