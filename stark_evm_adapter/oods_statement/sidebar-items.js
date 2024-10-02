@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["gps_statement_verifier_contract"],"struct":["MainProof"]};
+window.SIDEBAR_ITEMS = {"mod":["gps_statement_verifier_contract","memory_page_fact_registry_contract"],"struct":["ContinuousMemoryPage","FactNode","FactTopology","MainProof","RegularMemoryPage"]};

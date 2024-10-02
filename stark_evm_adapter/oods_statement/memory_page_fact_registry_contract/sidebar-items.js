@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"static":["MEMORYPAGEFACTREGISTRYCONTRACT_ABI"],"struct":["MemoryPageFactRegistryContract","RegisterContinuousMemoryPageCall"]};
