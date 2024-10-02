@@ -8,7 +8,10 @@ use ethers::{
     utils::{hex, Anvil},
 };
 use stark_evm_adapter::{
-    annotation_parser::SplitProofs, oods_statement::FactTopology, ContractFunctionCall,
+    annotated_proof::AnnotatedProof,
+    annotation_parser::{split_fri_merkle_statements, SplitProofs},
+    oods_statement::FactTopology,
+    ContractFunctionCall,
 };
 use std::{convert::TryFrom, env, fs::read_to_string, str::FromStr, sync::Arc};
 
