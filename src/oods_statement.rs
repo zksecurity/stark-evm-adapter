@@ -361,15 +361,15 @@ impl MainProof {
 
         let mut output = Vec::new();
         for addr in output_segment.begin_addr..stop_ptr {
-            let value = memory
+            let value = *memory
                 .get(&addr)
-                .ok_or(format!("Missing value for address: {}", addr))?
-                .clone();
+                .ok_or(format!("Missing value for address: {}", addr))?;
             output.push(value);
         }
         Ok(output)
     }
 
+    #[allow(dead_code)]
     fn get_trivial_topology(public_memory: &Vec<PublicMemory>) -> Vec<FactTopology> {
         let mut page_sizes = HashMap::new();
 
@@ -395,12 +395,11 @@ impl MainProof {
     fn keccak_ints(&self, values: &[U256]) -> Result<String, String> {
         let values_bytes = values
             .iter()
-            .map(|&value| {
+            .flat_map(|&value| {
                 let mut bytes = [0u8; 32]; // U256 is 32 bytes
                 value.to_big_endian(&mut bytes);
                 bytes
             })
-            .flatten()
             .collect::<Vec<u8>>();
 
         let result = keccak256(values_bytes.as_slice());
@@ -425,7 +424,7 @@ impl MainProof {
             }
 
             for _ in 0..n_pages {
-                let page_size = page_sizes.remove(0) as usize;
+                let page_size = page_sizes.remove(0);
                 let page_hash = self.keccak_ints(&program_output[offset..offset + page_size])?;
 
                 offset += page_size;
@@ -483,7 +482,7 @@ impl MainProof {
         fact_topology: &FactTopology,
     ) -> Result<String, String> {
         let output_root_node = self.generate_output_root(&program_output, fact_topology)?;
-        let hash = self.keccak_ints(&vec![program_hash, output_root_node.node_hash])?;
+        let hash = self.keccak_ints(&[program_hash, output_root_node.node_hash])?;
         Ok(hash)
     }
 
@@ -557,7 +556,6 @@ impl MainProof {
 
             expected_page_sizes.extend_from_slice(&fact_topology.page_sizes);
         }
-
 
         if ptr != output.len() {
             return Err(format!(

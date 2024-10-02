@@ -2,16 +2,13 @@ use ethers::{
     contract::ContractError,
     core::k256::ecdsa::SigningKey,
     middleware::SignerMiddleware,
-    providers::{Http, Middleware, Provider, ProviderError},
+    providers::{Http, Middleware, Provider},
     signers::{LocalWallet, Signer, Wallet},
-    types::{Address, U256, U64},
+    types::{Address, U64},
     utils::{hex, Anvil},
 };
 use stark_evm_adapter::{
-    annotated_proof::AnnotatedProof,
-    annotation_parser::{split_fri_merkle_statements, SplitProofs},
-    oods_statement::FactTopology,
-    ContractFunctionCall,
+    annotation_parser::SplitProofs, oods_statement::FactTopology, ContractFunctionCall,
 };
 use std::{convert::TryFrom, env, str::FromStr, sync::Arc};
 
@@ -73,8 +70,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "/tests/fixtures/madara_fibonacci_proof_topologies.json"
     ));
     let topology_json: serde_json::Value = serde_json::from_str(topologies_file).unwrap();
-    
-    let fact_topologies: Vec<FactTopology> = serde_json::from_value(topology_json.get("fact_topologies").unwrap().clone()).unwrap();
+
+    let fact_topologies: Vec<FactTopology> =
+        serde_json::from_value(topology_json.get("fact_topologies").unwrap().clone()).unwrap();
 
     // split proof file from madara prover
     let split_proofs_file = include_str!(concat!(
@@ -82,7 +80,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "/tests/fixtures/madara_fibonacci_proof.json"
     ));
     let split_proofs_json: serde_json::Value = serde_json::from_str(split_proofs_file).unwrap();
-    let split_proofs: SplitProofs = serde_json::from_value(split_proofs_json.get("split_proofs").unwrap().clone()).unwrap();
+    let split_proofs: SplitProofs =
+        serde_json::from_value(split_proofs_json.get("split_proofs").unwrap().clone()).unwrap();
 
     // start verifying all split proofs
     println!("Verifying trace decommitments:");
@@ -110,11 +109,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Address::from_str("0xFD14567eaf9ba941cB8c8a94eEC14831ca7fD1b4").unwrap();
 
     for (index, page) in continuous_pages.iter().enumerate() {
-        let register_continuous_pages_call = split_proofs.main_proof.register_continuous_memory_page(
-            memory_fact_registry_address,
-            signer.clone(),
-            page.clone(),
-        );
+        let register_continuous_pages_call =
+            split_proofs.main_proof.register_continuous_memory_page(
+                memory_fact_registry_address,
+                signer.clone(),
+                page.clone(),
+            );
 
         let name = format!("register continuous page: {}", index);
 
@@ -134,7 +134,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let call = split_proofs
         .main_proof
         .verify(contract_address, signer, task_metadata);
-        // .gas(U256::from(5_000_000));
+    // .gas(U256::from(5_000_000));
 
     assert_call(call, "Main proof").await?;
 
