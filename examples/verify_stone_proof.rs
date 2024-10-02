@@ -8,30 +8,32 @@ use ethers::{
     utils::{hex, Anvil},
 };
 use stark_evm_adapter::{
-    annotation_parser::SplitProofs, oods_statement::FactTopology, ContractFunctionCall,
+    annotated_proof::AnnotatedProof,
+    annotation_parser::{split_fri_merkle_statements, SplitProofs},
+    oods_statement::FactTopology,
+    ContractFunctionCall,
 };
-use std::{convert::TryFrom, env, str::FromStr, sync::Arc};
+use std::{convert::TryFrom, env, fs::read_to_string, str::FromStr, sync::Arc};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // setup a local mainnet fork
-    let url = env::var("MAINNET_RPC");
-    let forked_url = env::var("FORKED_MAINNET_RPC");
-    // check either env MAINNET_RPC or FORK_MAINNET_RPC is set
-    if url.is_err() && forked_url.is_err() {
+    let fork_url = env::var("FORK_URL");
+    let url = env::var("URL");
+    // check either env FORK_URL or URL is set
+    if url.is_err() && fork_url.is_err() {
         panic!(
-            "Either MAINNET_RPC or FORK_MAINNET_RPC must be set in env. \
-        You can get a mainnet RPC url from https://infura.io/, \
-        or forked mainnet RPC url from https://tenderly.co/"
+            "Either URL or FORK_URL must be set in env. \
+        Set FORK_URL to run locally using an Anvil instance, \
+        or set URL to submit tx on-chain (or run on a forked instance hosted on https://tenderly.co/)"
         );
     }
 
     let mut anvil = None;
 
-    let provider: Provider<Http> = if forked_url.is_ok() {
-        Provider::try_from(forked_url.unwrap().as_str())?
+    let provider: Provider<Http> = if url.is_ok() {
+        Provider::try_from(url.unwrap().as_str())?
     } else {
-        let url = url.unwrap();
+        let url = fork_url.unwrap();
         anvil = Some(Anvil::new().fork(url).block_time(1u8).spawn());
         let endpoint = anvil.as_ref().unwrap().endpoint();
         Provider::<Http>::try_from(endpoint.as_str())?
@@ -42,9 +44,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("Anvil is running.");
     }
 
-    // test private key from anvil node
-    let from_key_bytes =
-        hex::decode("0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d").unwrap();
+    let private_key = env::var("PRIVATE_KEY").unwrap_or(
+        "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d".to_string(),
+    );
+    let from_key_bytes = hex::decode(private_key.trim_start_matches("0x")).unwrap();
 
     let from_signing_key = SigningKey::from_bytes(from_key_bytes.as_slice().into()).unwrap();
     let from_wallet: LocalWallet = LocalWallet::from(from_signing_key);
@@ -57,46 +60,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     ));
 
     // load annotated proof
-    // let origin_proof_file = include_str!(concat!(
-    //     env!("CARGO_MANIFEST_DIR"),
-    //     "/tests/fixtures/new_annotated_proof.json"
-    // ));
-    // let annotated_proof: AnnotatedProof = serde_json::from_str(origin_proof_file).unwrap();
+    let origin_proof_file = read_to_string(env::var("ANNOTATED_PROOF")?)?;
+    let annotated_proof: AnnotatedProof = serde_json::from_str(&origin_proof_file)?;
     // generate split proofs
-    // let split_proofs: SplitProofs = split_fri_merkle_statements(annotated_proof.clone()).unwrap();
+    let split_proofs: SplitProofs = split_fri_merkle_statements(annotated_proof.clone()).unwrap();
 
-    let topologies_file = include_str!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/tests/fixtures/madara_fibonacci_proof_topologies.json"
-    ));
-    let topology_json: serde_json::Value = serde_json::from_str(topologies_file).unwrap();
+    let topologies_file = read_to_string(env::var("FACT_TOPOLOGIES")?)?;
+    let topology_json: serde_json::Value = serde_json::from_str(&topologies_file).unwrap();
 
     let fact_topologies: Vec<FactTopology> =
         serde_json::from_value(topology_json.get("fact_topologies").unwrap().clone()).unwrap();
 
-    // split proof file from madara prover
-    let split_proofs_file = include_str!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/tests/fixtures/madara_fibonacci_proof.json"
-    ));
-    let split_proofs_json: serde_json::Value = serde_json::from_str(split_proofs_file).unwrap();
-    let split_proofs: SplitProofs =
-        serde_json::from_value(split_proofs_json.get("split_proofs").unwrap().clone()).unwrap();
-
     // start verifying all split proofs
     println!("Verifying trace decommitments:");
-    let contract_address = Address::from_str("0x5899Efea757E0Dbd6d114b3375C23D7540f65fa4").unwrap();
+    let contract_address = Address::from_str("0x634dcf4f1421fc4d95a968a559a450ad0245804c").unwrap();
     for i in 0..split_proofs.merkle_statements.len() {
         let key = format!("Trace {}", i);
         let trace_merkle = split_proofs.merkle_statements.get(&key).unwrap();
 
         let call = trace_merkle.verify(contract_address, signer.clone());
-
         assert_call(call, &key).await?;
     }
 
     println!("Verifying FRI decommitments:");
-    let contract_address = Address::from_str("0x3E6118DA317f7A433031F03bB71ab870d87dd2DD").unwrap();
+    let contract_address = Address::from_str("0xdef8a3b280a54ee7ed4f72e1c7d6098ad8df44fb").unwrap();
     for (i, fri_statement) in split_proofs.fri_merkle_statements.iter().enumerate() {
         let call = fri_statement.verify(contract_address, signer.clone());
 
@@ -106,7 +93,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (_, continuous_pages) = split_proofs.main_proof.memory_page_registration_args();
 
     let memory_fact_registry_address =
-        Address::from_str("0xFD14567eaf9ba941cB8c8a94eEC14831ca7fD1b4").unwrap();
+        Address::from_str("0x40864568f679c10ac9e72211500096a5130770fa").unwrap();
 
     for (index, page) in continuous_pages.iter().enumerate() {
         let register_continuous_pages_call =
@@ -122,19 +109,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     println!("Verifying main proof:");
-    let contract_address = Address::from_str("0x47312450B3Ac8b5b8e247a6bB6d523e7605bDb60").unwrap();
+    let contract_address = Address::from_str("0xd51a3d50d4d2f99a345a66971e650eea064dd8df").unwrap();
 
     let task_metadata = split_proofs
         .main_proof
         .generate_tasks_metadata(true, fact_topologies)
         .unwrap();
 
-    println!("task_metadata: {:?}", task_metadata);
-
     let call = split_proofs
         .main_proof
         .verify(contract_address, signer, task_metadata);
-    // .gas(U256::from(5_000_000));
 
     assert_call(call, "Main proof").await?;
 
